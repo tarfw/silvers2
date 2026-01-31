@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Turso Tasks App",
+    "slug": "turso-tasks-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tarapp.tursotasks"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.tarapp.tursotasks"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": true,
+            "minSdkVersion": 24
+          },
+          "ios": {
+            "newArchEnabled": true
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8a5ae299-c463-421b-aa5f-786b1af4d934"
+      }
+    },
+    "owner": "entice"
+  }
+}
