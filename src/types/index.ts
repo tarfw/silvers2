@@ -1,23 +1,20 @@
-export interface Task {
+export interface Node {
   id: string;
-  created_by: string;
+  parentid: string | null;
+  type: 'product' | 'service';
+  unicode?: string;
   title: string;
-  description?: string;
-  completed: boolean;
-  priority: number;
-  due_date?: string;
-  created_at: string;
-  updated_at: string;
+  payload?: any;
+  createdat: string;
 }
 
-export interface TaskInput {
+export interface NodeInput {
+  parentid?: string | null;
+  type: 'product' | 'service';
+  unicode?: string;
   title: string;
-  description?: string;
-  priority?: number;
-  due_date?: string;
+  payload?: any;
 }
-
-export type Priority = 1 | 2 | 3; // 1 = Low, 2 = Medium, 3 = High
 
 export interface User {
   id: string;

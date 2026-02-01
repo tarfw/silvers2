@@ -3,7 +3,7 @@ import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { AuthScreen } from './src/screens/AuthScreen';
-import { TasksScreen } from './src/screens/TasksScreen';
+import { NodesScreen } from './src/screens/NodesScreen';
 
 function AppContent() {
   const { isLoading, isAuthenticated } = useAuth();
@@ -18,7 +18,7 @@ function AppContent() {
     );
   }
 
-  return isAuthenticated ? <TasksScreen /> : <AuthScreen />;
+  return isAuthenticated ? <NodesScreen /> : <AuthScreen />;
 }
 
 export default function App() {

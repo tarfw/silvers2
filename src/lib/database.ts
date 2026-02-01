@@ -35,7 +35,7 @@ class DatabaseManager {
     this.isInitializing = true;
     this.userId = userId;
     // Use a fixed local database name
-    const localDbName = `silvers_tasks.db`;
+    const localDbName = `silvers.db`;
     const dbPath = getDbPath(localDbName);
 
     try {
@@ -70,20 +70,18 @@ class DatabaseManager {
     if (!this.db) throw new Error('Database not initialized');
 
     const statements = [
-      `CREATE TABLE IF NOT EXISTS tasks (
+      `CREATE TABLE IF NOT EXISTS nodes (
         id TEXT PRIMARY KEY,
-        created_by TEXT NOT NULL,
+        parentid TEXT,
+        type TEXT NOT NULL,
+        unicode TEXT UNIQUE,
         title TEXT NOT NULL,
-        description TEXT,
-        completed INTEGER DEFAULT 0,
-        priority INTEGER DEFAULT 1,
-        due_date TEXT,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        payload JSON, 
+        createdat DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (parentid) REFERENCES nodes (id) ON DELETE CASCADE
       )`,
-      `CREATE INDEX IF NOT EXISTS idx_tasks_created_by ON tasks(created_by)`,
-      `CREATE INDEX IF NOT EXISTS idx_tasks_completed ON tasks(completed)`,
-      `CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date)`,
+      `CREATE INDEX IF NOT EXISTS idx_nodes_parentid ON nodes(parentid)`,
+      `CREATE INDEX IF NOT EXISTS idx_nodes_type ON nodes(type)`,
       `CREATE TABLE IF NOT EXISTS sync_metadata (
         id INTEGER PRIMARY KEY,
         last_sync_at TEXT,
@@ -91,18 +89,14 @@ class DatabaseManager {
       )`
     ];
 
-    // Check for old schema and migrate if necessary
+    // Clean up old tasks table if it exists
     try {
-      const tableInfo = await this.db.all('PRAGMA table_info(tasks)') as any[];
-      const hasOldColumn = tableInfo.some(col => col.name === 'user_id');
-      if (hasOldColumn) {
-        console.log(`[${new Date().toLocaleTimeString('en-GB')}] ⚠️ Old 'user_id' column found. Migrating to 'created_by'...`);
-        // Simpler to drop and recreate for this migration phase to ensure clean state
-        await this.db.exec('DROP TABLE IF EXISTS tasks');
-        await this.db.exec('DROP INDEX IF EXISTS idx_tasks_user_id');
-      }
+      await this.db.exec('DROP TABLE IF EXISTS tasks');
+      await this.db.exec('DROP INDEX IF EXISTS idx_tasks_created_by');
+      await this.db.exec('DROP INDEX IF EXISTS idx_tasks_completed');
+      await this.db.exec('DROP INDEX IF EXISTS idx_tasks_due_date');
     } catch (e) {
-      // Table might not exist yet, ignore
+      // Ignore errors during cleanup
     }
 
     for (const sql of statements) {
