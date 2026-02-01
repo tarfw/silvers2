@@ -13,35 +13,41 @@ class DatabaseManager {
 
   async initialize(userId: string): Promise<Database> {
     this.userId = userId;
-
-    // Create a unique local database name per user
     const localDbName = `tasks_${userId}.db`;
     const dbPath = getDbPath(localDbName);
 
-    this.db = new Database({
-      path: dbPath,
-      url: TURSO_URL,
-      authToken: TURSO_TOKEN,
-    });
+    try {
+      console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🔗 Turso DB connection initiated for user: ${userId}`);
+      this.db = new Database({
+        path: dbPath,
+        url: TURSO_URL,
+        authToken: TURSO_TOKEN,
+      });
 
-    // Connect to database (bootstraps from remote if empty)
-    await this.db.connect();
+      console.log(`[${new Date().toLocaleTimeString('en-GB')}] 📡 Connecting to Turso...`);
+      await this.db.connect();
+      console.log(`[${new Date().toLocaleTimeString('en-GB')}] ✅ Connected to Turso`);
 
-    // Initialize schema
-    await this.initializeSchema();
+      console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🛠️ Initializing schema...`);
+      await this.initializeSchema();
+      console.log(`[${new Date().toLocaleTimeString('en-GB')}] ✅ Schema initialized`);
 
-    // Pull initial data from cloud
-    await this.pull();
+      console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🔄 Pulling data...`);
+      await this.pull();
+      console.log(`[${new Date().toLocaleTimeString('en-GB')}] ✅ Initial pull completed`);
 
-    return this.db;
+      return this.db;
+    } catch (error) {
+      console.error(`[${new Date().toLocaleTimeString('en-GB')}] ❌ Database initialization failed:`, error);
+      throw error;
+    }
   }
 
   private async initializeSchema(): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
 
-    // Create tables
-    await this.db.exec(`
-      CREATE TABLE IF NOT EXISTS tasks (
+    const statements = [
+      `CREATE TABLE IF NOT EXISTS tasks (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
         title TEXT NOT NULL,
@@ -51,18 +57,27 @@ class DatabaseManager {
         due_date TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
-      CREATE INDEX IF NOT EXISTS idx_tasks_completed ON tasks(completed);
-      CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
-
-      CREATE TABLE IF NOT EXISTS sync_metadata (
-        id INTEGER PRIMARY KEY CHECK (id = 1),
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_tasks_completed ON tasks(completed)`,
+      `CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date)`,
+      `CREATE TABLE IF NOT EXISTS sync_metadata (
+        id INTEGER PRIMARY KEY,
         last_sync_at TEXT,
         last_sync_status TEXT
-      );
-    `);
+      )`
+    ];
+
+    for (const sql of statements) {
+      try {
+        console.log(`[${new Date().toLocaleTimeString('en-GB')}] 📝 Executing: ${sql.substring(0, 50)}...`);
+        await this.db.exec(sql);
+      } catch (error) {
+        console.error(`[${new Date().toLocaleTimeString('en-GB')}] ❌ Statement failed:`, error);
+        throw error;
+      }
+    }
+    console.log(`[${new Date().toLocaleTimeString('en-GB')}] ✅ Schema initialization completed`);
   }
 
   async pull(): Promise<void> {
@@ -97,12 +112,12 @@ class DatabaseManager {
     if (!this.db) throw new Error('Database not initialized');
 
     try {
-      await this.db.sync();
-      await this.updateSyncMetadata('sync', 'success');
-      console.log('✅ Sync completed successfully');
+      console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🔄 Starting full sync (pull + push)...`);
+      await this.pull();
+      await this.push();
+      console.log(`[${new Date().toLocaleTimeString('en-GB')}] ✅ Full sync completed successfully`);
     } catch (error) {
-      await this.updateSyncMetadata('sync', 'error');
-      console.error('❌ Sync failed:', error);
+      console.error(`[${new Date().toLocaleTimeString('en-GB')}] ❌ Sync failed:`, error);
       throw error;
     }
   }

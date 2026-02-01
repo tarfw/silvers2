@@ -21,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
+        console.log(`[${new Date().toLocaleTimeString('en-GB')}] 👤 User ID obtained from session: ${session.user.id}`);
         setUser({
           id: session.user.id,
           email: session.user.email!,
@@ -35,6 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
+        console.log(`[${new Date().toLocaleTimeString('en-GB')}] 👤 User ID obtained on SIGNED_IN: ${session.user.id}`);
         setUser({
           id: session.user.id,
           email: session.user.email!,

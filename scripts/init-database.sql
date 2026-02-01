@@ -22,7 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at);
 
 -- Create sync metadata table to track last sync
 CREATE TABLE IF NOT EXISTS sync_metadata (
-  id INTEGER PRIMARY KEY CHECK (id = 1),
+  id INTEGER PRIMARY KEY,
   last_sync_at TEXT,
   last_sync_status TEXT
 );
