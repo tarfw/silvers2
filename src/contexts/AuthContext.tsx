@@ -18,6 +18,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const initTenantDb = async (userId: string) => {
+      try {
+        console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🏦 Fetching tenant info for user: ${userId}`);
+
+        // Fetch profile with tenant info
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select(`
+            tenant_id,
+            tenants (
+              id,
+              turso_url,
+              turso_token
+            )
+          `)
+          .eq('id', userId)
+          .single();
+
+        if (profileError) {
+          if (profileError.code === 'PGRST205') {
+            console.error('❌ Supabase Schema Cache Error: Please refresh your Supabase Dashboard or wait 2 minutes for the new tables to be recognized.');
+          } else {
+            console.error('Error fetching tenant/profile info:', profileError);
+          }
+          return;
+        }
+
+        if (!profile?.tenants) {
+          console.error('❌ No tenant found for this user. Have you linked the user to a tenant in the Supabase database?');
+          return;
+        }
+
+        const tenant = profile.tenants as any;
+        if (!tenant.turso_url || !tenant.turso_token) {
+          console.error('❌ Tenant found but Turso credentials are missing in Supabase.');
+          return;
+        }
+
+        await databaseManager.initialize(
+          tenant.id,
+          tenant.turso_url,
+          tenant.turso_token,
+          userId
+        );
+
+        // Trigger initial sync in the background after 3 seconds
+        setTimeout(async () => {
+          try {
+            console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🔄 Triggering background auto-sync...`);
+            await databaseManager.pull();
+            console.log(`[${new Date().toLocaleTimeString('en-GB')}] ✅ Background auto-sync completed`);
+          } catch (e) {
+            console.warn(`[${new Date().toLocaleTimeString('en-GB')}] ⚠️ Background sync failed (this is normal if Turso is busy):`, e);
+          }
+        }, 3000);
+      } catch (err) {
+        console.error('Failed to initialize multi-tenant DB:', err);
+      }
+    };
+
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -27,8 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: session.user.email!,
           created_at: session.user.created_at,
         });
-        // Initialize database for this user
-        databaseManager.initialize(session.user.id);
+        initTenantDb(session.user.id);
       }
       setIsLoading(false);
     });
@@ -42,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: session.user.email!,
           created_at: session.user.created_at,
         });
-        await databaseManager.initialize(session.user.id);
+        await initTenantDb(session.user.id);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         await databaseManager.close();

@@ -12,12 +12,13 @@ export function useTasks() {
 
   const db = databaseManager.getDatabase();
 
-  // Load tasks from local database
+  // Load tasks from local database (Collaborative: Load all tasks in the tenant DB)
   const loadTasks = useCallback(async () => {
     if (!db || !user) return;
 
     try {
-      const rows = await db.all('SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC', [user.id]);
+      // Each tenant has its own DB, so we select all tasks to collaborate
+      const rows = await db.all('SELECT * FROM tasks ORDER BY created_at DESC');
       setTasks(rows as unknown as Task[]);
     } catch (error) {
       console.error('Error loading tasks:', error);
@@ -39,7 +40,7 @@ export function useTasks() {
 
     const task: Task = {
       id: uuidv4(),
-      user_id: user.id,
+      created_by: user.id,
       title: input.title,
       description: input.description,
       completed: false,
@@ -50,16 +51,16 @@ export function useTasks() {
     };
 
     await db.run(`
-      INSERT INTO tasks (id, user_id, title, description, completed, priority, due_date, created_at, updated_at)
+      INSERT INTO tasks (id, created_by, title, description, completed, priority, due_date, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       task.id,
-      task.user_id,
+      task.created_by,
       task.title,
-      task.description,
+      task.description ?? null,
       task.completed ? 1 : 0,
       task.priority,
-      task.due_date,
+      task.due_date ?? null,
       task.created_at,
       task.updated_at,
     ]);
@@ -79,12 +80,11 @@ export function useTasks() {
     const values = Object.values(updates);
     values.push(new Date().toISOString()); // updated_at
     values.push(id);
-    values.push(user.id);
 
     await db.run(`
       UPDATE tasks 
       SET ${setClause}, updated_at = ?
-      WHERE id = ? AND user_id = ?
+      WHERE id = ?
     `, values);
 
     await loadTasks();
@@ -97,8 +97,8 @@ export function useTasks() {
     await db.run(`
       UPDATE tasks 
       SET completed = CASE WHEN completed = 1 THEN 0 ELSE 1 END, updated_at = ?
-      WHERE id = ? AND user_id = ?
-    `, [new Date().toISOString(), id, user.id]);
+      WHERE id = ?
+    `, [new Date().toISOString(), id]);
 
     await loadTasks();
   };
@@ -107,7 +107,7 @@ export function useTasks() {
   const deleteTask = async (id: string): Promise<void> => {
     if (!db || !user) throw new Error('Not authenticated');
 
-    await db.run('DELETE FROM tasks WHERE id = ? AND user_id = ?', [id, user.id]);
+    await db.run('DELETE FROM tasks WHERE id = ?', [id]);
     setTasks(prev => prev.filter(t => t.id !== id));
   };
 

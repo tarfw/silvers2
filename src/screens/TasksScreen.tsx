@@ -92,9 +92,16 @@ function TaskItem({
           <Text style={[styles.taskTitle, task.completed && styles.taskTitleCompleted]}>
             {task.title}
           </Text>
-          {task.description && !task.completed && (
-            <Text style={styles.taskDescription}>{task.description}</Text>
-          )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+            {task.description && !task.completed && (
+              <Text style={styles.taskDescription}>{task.description}</Text>
+            )}
+            <View style={styles.creatorBadge}>
+              <Text style={styles.creatorBadgeText}>
+                {task.created_by.slice(0, 4)}
+              </Text>
+            </View>
+          </View>
         </View>
         <TouchableOpacity
           onPress={handleDelete}
@@ -558,5 +565,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     fontWeight: '500',
+  },
+  creatorBadge: {
+    marginLeft: 'auto',
+    backgroundColor: Colors.overlay,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  creatorBadgeText: {
+    fontSize: 10,
+    color: Colors.textSecondary,
+    fontWeight: '600',
   },
 });
