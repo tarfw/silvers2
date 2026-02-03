@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { databaseManager } from '../lib/database';
-import { Node, NodeInput } from '../types';
+import { Node } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -15,7 +15,7 @@ export function useNodes() {
         if (!db || !user) return;
 
         try {
-            const rows = await db.all('SELECT * FROM nodes ORDER BY createdat DESC') as any[];
+            const rows = await db.all('SELECT * FROM nodes') as any[];
             const parsedNodes = rows.map(row => ({
                 ...row,
                 payload: row.payload ? JSON.parse(row.payload) : null
@@ -60,7 +60,13 @@ export function useNodes() {
     }, [db, user, loadNodes]);
 
     // Create node
-    const createNode = async (input: NodeInput): Promise<Node> => {
+    const createNode = async (input: {
+        nodetype: 'product' | 'service';
+        universalcode: string;
+        title: string;
+        parentid?: string | null;
+        payload?: any
+    }): Promise<Node> => {
         if (!db || !user) throw new Error('Not authenticated');
 
         // Validate parent exists if provided
@@ -72,24 +78,22 @@ export function useNodes() {
         const node: Node = {
             id: uuidv4(),
             parentid: input.parentid || null,
-            type: input.type,
-            unicode: input.unicode || undefined,
+            nodetype: input.nodetype,
+            universalcode: input.universalcode,
             title: input.title,
-            payload: input.payload ? JSON.stringify(input.payload) : null,
-            createdat: new Date().toISOString(),
+            payload: input.payload ? JSON.stringify(input.payload) : undefined,
         };
 
         await db.run(`
-            INSERT INTO nodes (id, parentid, type, unicode, title, payload, createdat)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO nodes (id, parentid, nodetype, universalcode, title, payload)
+            VALUES (?, ?, ?, ?, ?, ?)
         `, [
             node.id,
             node.parentid,
-            node.type,
-            node.unicode ?? null,
+            node.nodetype,
+            node.universalcode,
             node.title,
             node.payload ?? null,
-            node.createdat,
         ]);
 
         await loadNodes();
@@ -97,7 +101,13 @@ export function useNodes() {
     };
 
     // Update node
-    const updateNode = async (id: string, updates: Partial<NodeInput>): Promise<void> => {
+    const updateNode = async (id: string, updates: Partial<{
+        nodetype: 'product' | 'service';
+        universalcode: string;
+        title: string;
+        parentid: string | null;
+        payload: any;
+    }>): Promise<void> => {
         if (!db || !user) throw new Error('Not authenticated');
 
         // Validate parent exists if provided in updates

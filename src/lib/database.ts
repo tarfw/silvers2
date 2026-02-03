@@ -11,6 +11,7 @@ class DatabaseManager {
   private db: Database | null = null;
   private userId: string | null = null;
   private isInitializing: boolean = false;
+  private isInitialized: boolean = false;
 
   async initialize(userId: string, url: string = TURSO_URL, token: string = TURSO_TOKEN): Promise<Database> {
     // Prevent parallel initializations
@@ -26,20 +27,22 @@ class DatabaseManager {
       });
     }
 
-    // Don't re-initialize if already connected
-    if (this.db && this.userId === userId) {
+    // Don't re-initialize if already connected AND schema is ready
+    if (this.db && this.userId === userId && this.isInitialized) {
       console.log(`[${new Date().toLocaleTimeString('en-GB')}] ♻️ Database already initialized.`);
       return this.db;
     }
 
     this.isInitializing = true;
     this.userId = userId;
-    // Use a fixed local database name
-    const localDbName = `silvers.db`;
+    this.isInitialized = false;
+
+    // Use a fixed local database name - v4 to ensure clean start after schema changes
+    const localDbName = `silvers_v4.db`;
     const dbPath = getDbPath(localDbName);
 
     try {
-      console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🔗 Turso DB connection initiated`);
+      console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🔗 Turso DB connection initiated (v4)`);
       this.db = new Database({
         path: dbPath,
         url: url,
@@ -52,6 +55,7 @@ class DatabaseManager {
 
       console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🛠️ Initializing schema...`);
       await this.initializeSchema();
+      this.isInitialized = true;
       console.log(`[${new Date().toLocaleTimeString('en-GB')}] ✅ Schema initialized`);
 
       // Add a small delay to let schema changes "settle" before sync starts
@@ -60,6 +64,8 @@ class DatabaseManager {
       return this.db;
     } catch (error) {
       console.error(`[${new Date().toLocaleTimeString('en-GB')}] ❌ Database initialization failed:`, error);
+      this.db = null; // Reset on failure
+      this.isInitialized = false;
       throw error;
     } finally {
       this.isInitializing = false;
@@ -69,19 +75,97 @@ class DatabaseManager {
   private async initializeSchema(): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
 
+    try {
+      console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🔑 Enabling foreign keys...`);
+      await this.db.exec('PRAGMA foreign_keys = ON;');
+      console.log(`[${new Date().toLocaleTimeString('en-GB')}] ✅ Foreign keys enabled`);
+    } catch (e) {
+      console.warn(`[${new Date().toLocaleTimeString('en-GB')}] ⚠️ PRAGMA foreign_keys failed:`, e);
+    }
+
     const statements = [
+      // ACTORS: Identity Layer
+      `CREATE TABLE IF NOT EXISTS actors (
+        id TEXT PRIMARY KEY,
+        parentid TEXT,
+        actortype TEXT NOT NULL,
+        globalcode TEXT NOT NULL,
+        name TEXT NOT NULL,
+        metadata TEXT,
+        vector BLOB,
+        FOREIGN KEY (parentid) REFERENCES actors(id)
+      )`,
+      // COLLAB: Authorization / Collaboration
+      `CREATE TABLE IF NOT EXISTS collab (
+        id TEXT PRIMARY KEY,
+        actorid TEXT NOT NULL,
+        targettype TEXT NOT NULL,
+        targetid TEXT NOT NULL,
+        role TEXT NOT NULL,
+        permissions TEXT,
+        createdat TEXT NOT NULL,
+        expiresat TEXT,
+        FOREIGN KEY (actorid) REFERENCES actors(id)
+      )`,
+      // NODES: Global Meaning Layer
       `CREATE TABLE IF NOT EXISTS nodes (
         id TEXT PRIMARY KEY,
         parentid TEXT,
-        type TEXT NOT NULL,
-        unicode TEXT UNIQUE,
+        nodetype TEXT NOT NULL,
+        universalcode TEXT NOT NULL,
         title TEXT NOT NULL,
-        payload JSON, 
-        createdat DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (parentid) REFERENCES nodes (id) ON DELETE CASCADE
+        payload TEXT,
+        embedding BLOB,
+        FOREIGN KEY (parentid) REFERENCES nodes(id)
       )`,
-      `CREATE INDEX IF NOT EXISTS idx_nodes_parentid ON nodes(parentid)`,
-      `CREATE INDEX IF NOT EXISTS idx_nodes_type ON nodes(type)`,
+      // POINTS: Local Availability Layer
+      `CREATE TABLE IF NOT EXISTS points (
+        id TEXT PRIMARY KEY,
+        noderef TEXT NOT NULL,
+        sellerid TEXT NOT NULL,
+        sku TEXT NOT NULL,
+        lat REAL NOT NULL,
+        lon REAL NOT NULL,
+        stock TEXT,
+        price REAL NOT NULL,
+        notes TEXT,
+        version INTEGER DEFAULT 0,
+        FOREIGN KEY (noderef) REFERENCES nodes(id),
+        FOREIGN KEY (sellerid) REFERENCES actors(id)
+      )`,
+      // STREAMS: OR Envelope
+      `CREATE TABLE IF NOT EXISTS streams (
+        id TEXT PRIMARY KEY,
+        scope TEXT NOT NULL,
+        createdby TEXT NOT NULL,
+        createdat TEXT NOT NULL
+      )`,
+      // STREAM PARTICIPANTS: P2P Membership
+      `CREATE TABLE IF NOT EXISTS streamcollab (
+        streamid TEXT NOT NULL,
+        actorid TEXT NOT NULL,
+        role TEXT NOT NULL,
+        joinedat TEXT,
+        PRIMARY KEY (streamid, actorid),
+        FOREIGN KEY (streamid) REFERENCES streams(id),
+        FOREIGN KEY (actorid) REFERENCES actors(id)
+      )`,
+      // OR EVENTS: Operational Ledger
+      `CREATE TABLE IF NOT EXISTS orevents (
+        id TEXT PRIMARY KEY,
+        streamid TEXT NOT NULL,
+        opcode INTEGER NOT NULL,
+        refid TEXT NOT NULL,
+        lat REAL,
+        lng REAL,
+        delta REAL DEFAULT 0,
+        payload TEXT,
+        scope TEXT NOT NULL,
+        status TEXT,
+        ts TEXT NOT NULL,
+        FOREIGN KEY (streamid) REFERENCES streams(id)
+      )`,
+      // SYNC METADATA
       `CREATE TABLE IF NOT EXISTS sync_metadata (
         id INTEGER PRIMARY KEY,
         last_sync_at TEXT,
@@ -89,20 +173,13 @@ class DatabaseManager {
       )`
     ];
 
-    // Clean up old tasks table if it exists
-    try {
-      await this.db.exec('DROP TABLE IF EXISTS tasks');
-      await this.db.exec('DROP INDEX IF EXISTS idx_tasks_created_by');
-      await this.db.exec('DROP INDEX IF EXISTS idx_tasks_completed');
-      await this.db.exec('DROP INDEX IF EXISTS idx_tasks_due_date');
-    } catch (e) {
-      // Ignore errors during cleanup
-    }
-
+    console.log(`[${new Date().toLocaleTimeString('en-GB')}] 📝 Creating tables...`);
     for (const sql of statements) {
       try {
-        console.log(`[${new Date().toLocaleTimeString('en-GB')}] 📝 Executing: ${sql.substring(0, 50)}...`);
+        const tableName = sql.match(/CREATE TABLE IF NOT EXISTS (\w+)/)?.[1] || 'unknown';
+        console.log(`[${new Date().toLocaleTimeString('en-GB')}] 📝 Creating table: ${tableName}`);
         await this.db.exec(sql);
+        console.log(`[${new Date().toLocaleTimeString('en-GB')}] ✅ Created table: ${tableName}`);
       } catch (error) {
         console.error(`[${new Date().toLocaleTimeString('en-GB')}] ❌ Statement failed:`, error);
         throw error;

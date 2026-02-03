@@ -15,21 +15,21 @@ const TURSO_TOKEN = process.env.EXPO_PUBLIC_TURSO_TOKEN || 'eyJhbGciOiJFZERTQSIs
 
 async function verifySupabase() {
   console.log('🔍 Testing Supabase connection...');
-  
+
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
+
     // Test authentication service
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
+
     if (sessionError) {
       console.error('❌ Supabase session check failed:', sessionError.message);
       return false;
     }
-    
+
     console.log('✅ Supabase connection successful');
     console.log('   Session status:', session ? 'Active' : 'No session');
-    
+
     return true;
   } catch (error) {
     console.error('❌ Supabase connection failed:', error);
@@ -39,29 +39,33 @@ async function verifySupabase() {
 
 async function verifyTurso() {
   console.log('\n🔍 Testing Turso connection...');
-  
+
   try {
     const client = createTursoClient({
       url: TURSO_URL,
       authToken: TURSO_TOKEN,
     });
-    
+
     // Test database connection with a simple query
     const result = await client.execute('SELECT sqlite_version() as version');
-    
+
     console.log('✅ Turso connection successful');
     console.log('   SQLite version:', result.rows[0]?.version);
-    
+
     // Check if tables exist
     const tablesResult = await client.execute("SELECT name FROM sqlite_master WHERE type='table'");
-    const tables = tablesResult.rows.map(row => row.name);
-    
+    const tables = (tablesResult.rows as any[]).map(row => row.name);
+
     console.log('   Existing tables:', tables.length > 0 ? tables.join(', ') : 'None');
-    
-    if (!tables.includes('tasks')) {
-      console.log('⚠️  Warning: tasks table not found. Run init-database.sql first!');
+
+    if (!tables.includes('nodes')) {
+      console.log('⚠️  Warning: nodes table not found. Schema might not be initialized yet.');
     }
-    
+
+    if (!tables.includes('actors')) {
+      console.log('⚠️  Warning: actors table not found. Schema might not be initialized yet.');
+    }
+
     return true;
   } catch (error) {
     console.error('❌ Turso connection failed:', error);
@@ -71,14 +75,14 @@ async function verifyTurso() {
 
 async function main() {
   console.log('🚀 Starting verification...\n');
-  
+
   const supabaseOk = await verifySupabase();
   const tursoOk = await verifyTurso();
-  
+
   console.log('\n📊 Verification Results:');
   console.log('   Supabase:', supabaseOk ? '✅ OK' : '❌ FAILED');
   console.log('   Turso:', tursoOk ? '✅ OK' : '❌ FAILED');
-  
+
   if (supabaseOk && tursoOk) {
     console.log('\n✨ All systems ready! You can now run the app.');
     process.exit(0);

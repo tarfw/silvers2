@@ -64,7 +64,7 @@ function NodeItem({
             <View style={styles.nodeContent}>
                 <Text style={styles.nodeTitle}>{node.title}</Text>
                 <Text style={styles.nodeSubtitle}>
-                    {node.type} {node.unicode ? `• ${node.unicode}` : ''}
+                    {node.nodetype} {node.universalcode ? `• ${node.universalcode}` : ''}
                 </Text>
             </View>
             <TouchableOpacity
@@ -90,8 +90,8 @@ export function NodesScreen() {
 
     // Form State
     const [formTitle, setFormTitle] = useState('');
-    const [formType, setFormType] = useState<'product' | 'service'>('product');
-    const [formUnicode, setFormUnicode] = useState('');
+    const [formNodeType, setFormNodeType] = useState<'product' | 'service'>('product');
+    const [formUniversalCode, setFormUniversalCode] = useState('');
     const [formParentId, setFormParentId] = useState<string | null>(null);
     const [formPayload, setFormPayload] = useState('');
 
@@ -101,8 +101,8 @@ export function NodesScreen() {
 
     const resetForm = () => {
         setFormTitle('');
-        setFormType('product');
-        setFormUnicode('');
+        setFormNodeType('product');
+        setFormUniversalCode('');
         setFormParentId(null);
         setFormPayload('');
         setEditingNode(null);
@@ -116,10 +116,10 @@ export function NodesScreen() {
     const handleOpenEdit = (node: Node) => {
         setEditingNode(node);
         setFormTitle(node.title);
-        setFormType(node.type);
-        setFormUnicode(node.unicode || '');
+        setFormNodeType(node.nodetype);
+        setFormUniversalCode(node.universalcode || '');
         setFormParentId(node.parentid || null);
-        setFormPayload(node.payload ? JSON.stringify(node.payload, null, 2) : '');
+        setFormPayload(node.payload ? JSON.stringify(JSON.parse(node.payload), null, 2) : '');
         setModalVisible(true);
     };
 
@@ -143,16 +143,16 @@ export function NodesScreen() {
             if (editingNode) {
                 await updateNode(editingNode.id, {
                     title: formTitle.trim(),
-                    type: formType,
-                    unicode: formUnicode.trim() || undefined,
+                    nodetype: formNodeType,
+                    universalcode: formUniversalCode.trim(),
                     parentid: formParentId,
                     payload: parsedPayload,
                 });
             } else {
                 await createNode({
                     title: formTitle.trim(),
-                    type: formType,
-                    unicode: formUnicode.trim() || undefined,
+                    nodetype: formNodeType,
+                    universalcode: formUniversalCode.trim(),
                     parentid: formParentId,
                     payload: parsedPayload,
                 });
@@ -301,28 +301,28 @@ export function NodesScreen() {
                             <Text style={styles.label}>Type</Text>
                             <View style={styles.typeSelector}>
                                 <TouchableOpacity
-                                    style={[styles.typeButton, formType === 'product' && styles.typeButtonActive]}
-                                    onPress={() => setFormType('product')}
+                                    style={[styles.typeButton, formNodeType === 'product' && styles.typeButtonActive]}
+                                    onPress={() => setFormNodeType('product')}
                                 >
-                                    <Text style={[styles.typeText, formType === 'product' && styles.typeTextActive]}>Product</Text>
+                                    <Text style={[styles.typeText, formNodeType === 'product' && styles.typeTextActive]}>Product</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    style={[styles.typeButton, formType === 'service' && styles.typeButtonActive]}
-                                    onPress={() => setFormType('service')}
+                                    style={[styles.typeButton, formNodeType === 'service' && styles.typeButtonActive]}
+                                    onPress={() => setFormNodeType('service')}
                                 >
-                                    <Text style={[styles.typeText, formType === 'service' && styles.typeTextActive]}>Service</Text>
+                                    <Text style={[styles.typeText, formNodeType === 'service' && styles.typeTextActive]}>Service</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
 
                         <View style={styles.formGroup}>
-                            <Text style={styles.label}>Unicode</Text>
+                            <Text style={styles.label}>Universal Code</Text>
                             <TextInput
                                 style={styles.modalInput}
-                                placeholder="Optional"
+                                placeholder="GTIN / Service Code"
                                 placeholderTextColor={Colors.textSecondary}
-                                value={formUnicode}
-                                onChangeText={setFormUnicode}
+                                value={formUniversalCode}
+                                onChangeText={setFormUniversalCode}
                             />
                         </View>
 
