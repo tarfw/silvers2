@@ -61,7 +61,7 @@ export function useNodes() {
 
     // Create node
     const createNode = async (input: {
-        nodetype: 'product' | 'service';
+        nodetype: 'product' | 'category' | 'collection' | 'optionset' | 'option';
         universalcode: string;
         title: string;
         parentid?: string | null;
@@ -102,7 +102,7 @@ export function useNodes() {
 
     // Update node
     const updateNode = async (id: string, updates: Partial<{
-        nodetype: 'product' | 'service';
+        nodetype: 'product' | 'category' | 'collection' | 'optionset' | 'option';
         universalcode: string;
         title: string;
         parentid: string | null;

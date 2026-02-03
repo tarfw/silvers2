@@ -21,7 +21,8 @@ const Colors = {
     surface: '#FFFFFF',
     primary: '#000000',
     product: '#E5E5EA',
-    service: '#E5E5EA',
+    category: '#E5E5EA',
+    collection: '#E5E5EA',
     text: '#000000',
     textSecondary: '#636366',
     separator: '#F2F2F7',
@@ -86,11 +87,12 @@ export function NodesScreen() {
 
     // State for Add/Edit
     const [isModalVisible, setModalVisible] = useState(false);
+    const [isTypeSelectionVisible, setTypeSelectionVisible] = useState(false);
     const [editingNode, setEditingNode] = useState<Node | null>(null);
 
     // Form State
     const [formTitle, setFormTitle] = useState('');
-    const [formNodeType, setFormNodeType] = useState<'product' | 'service'>('product');
+    const [formNodeType, setFormNodeType] = useState<'product' | 'category' | 'collection' | 'optionset' | 'option'>('product');
     const [formUniversalCode, setFormUniversalCode] = useState('');
     const [formParentId, setFormParentId] = useState<string | null>(null);
     const [formPayload, setFormPayload] = useState('');
@@ -109,7 +111,13 @@ export function NodesScreen() {
     };
 
     const handleOpenAdd = () => {
+        setTypeSelectionVisible(true);
+    };
+
+    const handleSelectType = (type: 'product' | 'category' | 'collection' | 'optionset' | 'option') => {
         resetForm();
+        setFormNodeType(type);
+        setTypeSelectionVisible(false);
         setModalVisible(true);
     };
 
@@ -217,6 +225,11 @@ export function NodesScreen() {
         );
     };
 
+    const formatNodeType = (type: string) => {
+        if (type === 'optionset') return 'Options Set';
+        return type.charAt(0).toUpperCase() + type.slice(1);
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -267,6 +280,56 @@ export function NodesScreen() {
                 </Text>
             </View>
 
+            {/* Type Selection Bottom Drawer */}
+            <Modal
+                visible={isTypeSelectionVisible}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setTypeSelectionVisible(false)}
+            >
+                <View style={styles.drawerOverlay}>
+                    <TouchableOpacity
+                        style={styles.drawerDismiss}
+                        activeOpacity={1}
+                        onPress={() => setTypeSelectionVisible(false)}
+                    />
+                    <View style={styles.drawerContent}>
+                        <View style={styles.drawerHandle} />
+                        <Text style={styles.drawerTitle}>Create New</Text>
+                        <TouchableOpacity
+                            style={styles.drawerItem}
+                            onPress={() => handleSelectType('product')}
+                        >
+                            <Text style={styles.drawerItemText}>Product</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.drawerItem}
+                            onPress={() => handleSelectType('collection')}
+                        >
+                            <Text style={styles.drawerItemText}>Collection</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.drawerItem}
+                            onPress={() => handleSelectType('category')}
+                        >
+                            <Text style={styles.drawerItemText}>Category</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.drawerItem}
+                            onPress={() => handleSelectType('optionset')}
+                        >
+                            <Text style={styles.drawerItemText}>Options Set</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.drawerItem}
+                            onPress={() => handleSelectType('option')}
+                        >
+                            <Text style={styles.drawerItemText}>Option</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
             {/* Add/Edit Modal */}
             <Modal
                 visible={isModalVisible}
@@ -279,7 +342,9 @@ export function NodesScreen() {
                         <TouchableOpacity onPress={() => setModalVisible(false)}>
                             <Text style={styles.modalCloseText}>Cancel</Text>
                         </TouchableOpacity>
-                        <Text style={styles.modalTitle}>{editingNode ? 'Edit' : 'New'}</Text>
+                        <Text style={styles.modalTitle}>
+                            {editingNode ? 'Edit' : 'New'} {formatNodeType(formNodeType)}
+                        </Text>
                         <TouchableOpacity onPress={handleSave}>
                             <Text style={styles.modalSaveText}>Done</Text>
                         </TouchableOpacity>
@@ -297,34 +362,18 @@ export function NodesScreen() {
                             />
                         </View>
 
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Type</Text>
-                            <View style={styles.typeSelector}>
-                                <TouchableOpacity
-                                    style={[styles.typeButton, formNodeType === 'product' && styles.typeButtonActive]}
-                                    onPress={() => setFormNodeType('product')}
-                                >
-                                    <Text style={[styles.typeText, formNodeType === 'product' && styles.typeTextActive]}>Product</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.typeButton, formNodeType === 'service' && styles.typeButtonActive]}
-                                    onPress={() => setFormNodeType('service')}
-                                >
-                                    <Text style={[styles.typeText, formNodeType === 'service' && styles.typeTextActive]}>Service</Text>
-                                </TouchableOpacity>
+                        {formNodeType === 'product' && (
+                            <View style={styles.formGroup}>
+                                <Text style={styles.label}>Universal Code</Text>
+                                <TextInput
+                                    style={styles.modalInput}
+                                    placeholder="GTIN / Service Code"
+                                    placeholderTextColor={Colors.textSecondary}
+                                    value={formUniversalCode}
+                                    onChangeText={setFormUniversalCode}
+                                />
                             </View>
-                        </View>
-
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Universal Code</Text>
-                            <TextInput
-                                style={styles.modalInput}
-                                placeholder="GTIN / Service Code"
-                                placeholderTextColor={Colors.textSecondary}
-                                value={formUniversalCode}
-                                onChangeText={setFormUniversalCode}
-                            />
-                        </View>
+                        )}
 
                         <View style={styles.formGroup}>
                             <Text style={styles.label}>Parent ID</Text>
@@ -508,6 +557,7 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 16,
         fontWeight: '600',
+        textTransform: 'capitalize',
     },
     modalScroll: {
         flex: 1,
@@ -558,5 +608,57 @@ const styles = StyleSheet.create({
     },
     typeTextActive: {
         color: Colors.surface,
+    },
+    readOnlyTypeContainer: {
+        backgroundColor: '#F2F2F7',
+        borderRadius: 8,
+        padding: 16,
+    },
+    readOnlyTypeText: {
+        fontSize: 16,
+        color: Colors.textSecondary,
+        textTransform: 'capitalize',
+        fontWeight: '500',
+    },
+    /* Drawer Styles */
+    drawerOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'flex-end',
+    },
+    drawerDismiss: {
+        flex: 1,
+    },
+    drawerContent: {
+        backgroundColor: Colors.surface,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+        paddingHorizontal: 24,
+    },
+    drawerHandle: {
+        width: 40,
+        height: 5,
+        backgroundColor: Colors.separator,
+        borderRadius: 2.5,
+        alignSelf: 'center',
+        marginTop: 12,
+        marginBottom: 20,
+    },
+    drawerTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 16,
+        color: Colors.text,
+    },
+    drawerItem: {
+        paddingVertical: 18,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.separator,
+    },
+    drawerItemText: {
+        fontSize: 17,
+        fontWeight: '400',
+        color: Colors.text,
     },
 });

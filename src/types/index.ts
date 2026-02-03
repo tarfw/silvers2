@@ -22,7 +22,7 @@ export interface Collab {
 export interface Node {
   id: string;
   parentid: string | null;
-  nodetype: 'product' | 'service';
+  nodetype: 'product' | 'category' | 'collection' | 'optionset' | 'option';
   universalcode: string;
   title: string;
   payload?: string;    // JSON string
@@ -44,7 +44,7 @@ export interface Point {
 
 export interface Stream {
   id: string;
-  scope: 'retail' | 'taxi' | 'food' | 'service' | 'p2p';
+  scope: 'retail' | 'taxi' | 'food' | 'p2p';
   createdby: string;
   createdat: string;
 }
@@ -65,7 +65,7 @@ export interface OrEvent {
   lng?: number;
   delta: number;
   payload?: string;    // JSON string
-  scope: 'retail' | 'taxi' | 'food' | 'service' | 'p2p';
+  scope: 'retail' | 'taxi' | 'food' | 'p2p';
   status?: string;
   ts: string;
 }
