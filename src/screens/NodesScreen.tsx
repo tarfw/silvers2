@@ -11,10 +11,13 @@ import {
     Alert,
     Modal,
     ScrollView,
+    ActivityIndicator,
 } from 'react-native';
 import { useNodes } from '../hooks/useNodes';
 import { useAuth } from '../contexts/AuthContext';
 import { Node } from '../types';
+import { storage } from '../lib/storage';
+import { SecureImage } from '../components/SecureImage';
 
 const Colors = {
     background: '#FFFFFF',
@@ -62,6 +65,13 @@ function NodeItem({
 }) {
     return (
         <TouchableOpacity style={styles.nodeItem} onPress={() => onEdit(node)} activeOpacity={0.6}>
+            {node.nodetype === 'product' && (
+                <SecureImage
+                    source={{ uri: node.payload && typeof node.payload === 'object' ? (node.payload as any).image : '' }}
+                    style={styles.nodeImage}
+                    fallbackComponent={<View style={styles.nodeImagePlaceholder} />}
+                />
+            )}
             <View style={styles.nodeContent}>
                 <Text style={styles.nodeTitle}>{node.title}</Text>
                 <Text style={styles.nodeSubtitle}>
@@ -77,7 +87,7 @@ function NodeItem({
             >
                 <Text style={styles.deleteButtonText}>Remove</Text>
             </TouchableOpacity>
-        </TouchableOpacity>
+        </TouchableOpacity >
     );
 }
 
@@ -109,6 +119,9 @@ export function NodesScreen() {
     const [parentSearchQuery, setParentSearchQuery] = useState('');
     const [parentTypeFilter, setParentTypeFilter] = useState<string>('category');
     const [isMultiSelectModalVisible, setIsMultiSelectModalVisible] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const [isImageOptionsVisible, setIsImageOptionsVisible] = useState(false);
 
     const resetForm = () => {
         setFormTitle('');
@@ -120,6 +133,7 @@ export function NodesScreen() {
         setFormImageUrl('');
         setFormSelectedOptions([]);
         setEditingNode(null);
+        setIsImageOptionsVisible(false);
     };
 
     const handleOpenAdd = () => {
@@ -477,15 +491,26 @@ export function NodesScreen() {
                         {(formNodeType === 'category' || formNodeType === 'collection' || formNodeType === 'product') && (
                             <>
                                 <View style={styles.formGroup}>
-                                    <Text style={styles.label}>Image URL</Text>
-                                    <TextInput
-                                        style={styles.modalInput}
-                                        placeholder="https://example.com/image.jpg"
-                                        placeholderTextColor={Colors.textSecondary}
-                                        value={formImageUrl}
-                                        onChangeText={setFormImageUrl}
-                                    />
+                                    <Text style={styles.label}>Image</Text>
+                                    <TouchableOpacity
+                                        style={styles.minimalImageContainer}
+                                        onPress={() => setIsImageOptionsVisible(true)}
+                                        activeOpacity={0.8}
+                                    >
+                                        {formImageUrl ? (
+                                            <SecureImage
+                                                source={{ uri: formImageUrl }}
+                                                style={styles.minimalImagePreview}
+                                                resizeMode="cover"
+                                            />
+                                        ) : (
+                                            <View style={styles.minimalImagePlaceholder}>
+                                                <Text style={styles.minimalImagePlaceholderText}>+ Add Image</Text>
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
                                 </View>
+
                                 <View style={styles.formGroup}>
                                     <Text style={styles.label}>Description</Text>
                                     <TextInput
@@ -537,6 +562,77 @@ export function NodesScreen() {
                         )}
                     </ScrollView>
                 </View>
+            </Modal>
+
+            {/* Image Options Drawer */}
+            <Modal
+                visible={isImageOptionsVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setIsImageOptionsVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.drawerOverlay}
+                    activeOpacity={1}
+                    onPress={() => setIsImageOptionsVisible(false)}
+                >
+                    <View style={styles.drawerContent}>
+                        <View style={styles.drawerHandle} />
+                        <Text style={styles.drawerTitle}>Image Options</Text>
+
+                        <View style={styles.drawerContentPadding}>
+                            <Text style={[styles.label, { marginBottom: 8 }]}>Image URL</Text>
+                            <TextInput
+                                style={[styles.modalInput, { marginBottom: 16 }]}
+                                placeholder="https://example.com/image.jpg"
+                                placeholderTextColor={Colors.textSecondary}
+                                value={formImageUrl}
+                                onChangeText={setFormImageUrl}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                            />
+
+                            <TouchableOpacity
+                                style={[styles.uploadButton, { marginBottom: 12 }]}
+                                onPress={async () => {
+                                    setIsUploading(true);
+                                    try {
+                                        const result = await storage.uploadImage();
+                                        if (result) setFormImageUrl(result.publicUrl);
+                                        // setIsImageOptionsVisible(false); // Close drawer on success? Or keep open to see URL update? 
+                                        // Let's keep it open so they see the URL change, or we can close it. 
+                                        // User asked for "url, replace, remove all come as bottom drawer", so keep it there.
+                                    } catch (e: any) {
+                                        Alert.alert('Upload Failed', e.message);
+                                    } finally {
+                                        setIsUploading(false);
+                                    }
+                                }}
+                                disabled={isUploading}
+                            >
+                                {isUploading ? (
+                                    <ActivityIndicator size="small" color={Colors.primary} />
+                                ) : (
+                                    <Text style={styles.uploadButtonText}>
+                                        {formImageUrl ? 'Replace Image' : 'Upload Image'}
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+
+                            {formImageUrl ? (
+                                <TouchableOpacity
+                                    style={[styles.removeImageButton, { alignSelf: 'stretch', alignItems: 'center' }]}
+                                    onPress={() => {
+                                        setFormImageUrl('');
+                                        // setIsImageOptionsVisible(false); // Optional: close on remove
+                                    }}
+                                >
+                                    <Text style={styles.removeImageText}>Remove Image</Text>
+                                </TouchableOpacity>
+                            ) : null}
+                        </View>
+                    </View>
+                </TouchableOpacity>
             </Modal>
 
             {/* Parent Selection Modal */}
@@ -1026,5 +1122,84 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: '400',
         color: Colors.text,
+    },
+    /* Image and Upload Styles */
+    nodeImage: {
+        width: 44,
+        height: 44,
+        borderRadius: 8,
+        marginRight: 12,
+        backgroundColor: '#F2F2F7',
+    },
+    nodeImagePlaceholder: {
+        width: 44,
+        height: 44,
+        borderRadius: 8,
+        marginRight: 12,
+        backgroundColor: '#F2F2F7',
+    },
+    /* Minimal Image Edit Styles */
+    minimalImageContainer: {
+        height: 200,
+        backgroundColor: '#F2F2F7',
+        borderRadius: 12,
+        overflow: 'hidden',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    minimalImagePreview: {
+        width: '100%',
+        height: '100%',
+    },
+    minimalImagePlaceholder: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    minimalImagePlaceholderText: {
+        color: Colors.primary,
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    drawerContentPadding: {
+        paddingTop: 8,
+    },
+
+    uploadButton: {
+        marginTop: 12,
+        backgroundColor: '#FAFAFA',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: Colors.separator,
+    },
+    uploadButtonText: {
+        color: Colors.text,
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    imagePreviewContainer: {
+        marginTop: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FAFAFA',
+        padding: 8,
+        borderRadius: 12,
+    },
+    imagePreview: {
+        width: 80,
+        height: 80,
+        borderRadius: 8,
+    },
+    removeImageButton: {
+        marginLeft: 16,
+        padding: 8,
+    },
+    removeImageText: {
+        color: Colors.danger,
+        fontSize: 14,
+        fontWeight: '500',
     },
 });
