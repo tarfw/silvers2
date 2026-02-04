@@ -59,6 +59,16 @@ export function useNodes() {
         init();
     }, [db, user, loadNodes]);
 
+    // Helper to generate a short unique ID (10 chars)
+    const generateShortId = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < 10; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    };
+
     // Create node
     const createNode = async (input: {
         nodetype: 'product' | 'category' | 'collection' | 'optionset' | 'option';
@@ -76,7 +86,7 @@ export function useNodes() {
         }
 
         const node: Node = {
-            id: uuidv4(),
+            id: generateShortId(),
             parentid: input.parentid || null,
             nodetype: input.nodetype,
             universalcode: input.universalcode,

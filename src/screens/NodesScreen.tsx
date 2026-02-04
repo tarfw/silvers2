@@ -96,6 +96,9 @@ export function NodesScreen() {
     const [formUniversalCode, setFormUniversalCode] = useState('');
     const [formParentId, setFormParentId] = useState<string | null>(null);
     const [formPayload, setFormPayload] = useState('');
+    const [formDescription, setFormDescription] = useState('');
+    const [formImageUrl, setFormImageUrl] = useState('');
+    const [formSelectedOptions, setFormSelectedOptions] = useState<string[]>([]);
 
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isPulling, setIsPulling] = useState(false);
@@ -105,6 +108,7 @@ export function NodesScreen() {
     const [isParentPickerVisible, setParentPickerVisible] = useState(false);
     const [parentSearchQuery, setParentSearchQuery] = useState('');
     const [parentTypeFilter, setParentTypeFilter] = useState<string>('category');
+    const [isMultiSelectModalVisible, setIsMultiSelectModalVisible] = useState(false);
 
     const resetForm = () => {
         setFormTitle('');
@@ -112,6 +116,9 @@ export function NodesScreen() {
         setFormUniversalCode('');
         setFormParentId(null);
         setFormPayload('');
+        setFormDescription('');
+        setFormImageUrl('');
+        setFormSelectedOptions([]);
         setEditingNode(null);
     };
 
@@ -132,7 +139,25 @@ export function NodesScreen() {
         setFormNodeType(node.nodetype);
         setFormUniversalCode(node.universalcode || '');
         setFormParentId(node.parentid || null);
-        setFormPayload(node.payload ? JSON.stringify(JSON.parse(node.payload), null, 2) : '');
+        const parsed = node.payload as any;
+        if (parsed) {
+            setFormPayload(typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
+            setFormDescription(parsed.description || '');
+            setFormImageUrl(parsed.image || '');
+            const rawOptions = parsed.options || [];
+            if (rawOptions && typeof rawOptions === 'object' && !Array.isArray(rawOptions)) {
+                // Handle grouped structure: { "Size": ["id1"], "Color": ["id2"] }
+                setFormSelectedOptions(Object.values(rawOptions).flat() as string[]);
+            } else {
+                // Handle flat array structure
+                setFormSelectedOptions(rawOptions);
+            }
+        } else {
+            setFormPayload('');
+            setFormDescription('');
+            setFormImageUrl('');
+            setFormSelectedOptions([]);
+        }
         setModalVisible(true);
     };
 
@@ -143,7 +168,23 @@ export function NodesScreen() {
         }
 
         let parsedPayload = null;
-        if (formPayload.trim()) {
+        if (formNodeType === 'category' || formNodeType === 'collection' || formNodeType === 'product') {
+            parsedPayload = {
+                description: formDescription.trim(),
+                image: formImageUrl.trim(),
+            };
+            if (formNodeType === 'product') {
+                // Group options by their parent title for better readability
+                const groupedOptions: Record<string, string[]> = {};
+                formSelectedOptions.forEach(optId => {
+                    const optNode = nodes.find(n => n.id === optId);
+                    const groupTitle = nodes.find(n => n.id === optNode?.parentid)?.title || 'General';
+                    if (!groupedOptions[groupTitle]) groupedOptions[groupTitle] = [];
+                    groupedOptions[groupTitle].push(optId);
+                });
+                (parsedPayload as any).options = groupedOptions;
+            }
+        } else if (formPayload.trim()) {
             try {
                 parsedPayload = JSON.parse(formPayload);
             } catch (e) {
@@ -230,8 +271,14 @@ export function NodesScreen() {
         );
     };
 
+    const toggleOption = (id: string) => {
+        setFormSelectedOptions(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
     const formatNodeType = (type: string) => {
-        if (type === 'optionset') return 'Options Set';
+        if (type === 'optionset') return 'Options Group';
         return type.charAt(0).toUpperCase() + type.slice(1);
     };
 
@@ -347,7 +394,7 @@ export function NodesScreen() {
                             style={styles.drawerItem}
                             onPress={() => handleSelectType('optionset')}
                         >
-                            <Text style={styles.drawerItemText}>Options Set</Text>
+                            <Text style={styles.drawerItemText}>Options Group</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={styles.drawerItem}
@@ -406,7 +453,7 @@ export function NodesScreen() {
 
                         {shouldShowParentId(formNodeType) && (
                             <View style={styles.formGroup}>
-                                <Text style={styles.label}>Parent ID</Text>
+                                <Text style={styles.label}>Parent</Text>
                                 <TouchableOpacity
                                     style={styles.selectorButton}
                                     onPress={() => {
@@ -427,19 +474,67 @@ export function NodesScreen() {
                             </View>
                         )}
 
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Payload</Text>
-                            <TextInput
-                                style={[styles.modalInput, styles.textArea]}
-                                placeholder='{}'
-                                placeholderTextColor={Colors.textSecondary}
-                                value={formPayload}
-                                onChangeText={setFormPayload}
-                                multiline
-                                numberOfLines={6}
-                                textAlignVertical="top"
-                            />
-                        </View>
+                        {(formNodeType === 'category' || formNodeType === 'collection' || formNodeType === 'product') && (
+                            <>
+                                <View style={styles.formGroup}>
+                                    <Text style={styles.label}>Image URL</Text>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        placeholder="https://example.com/image.jpg"
+                                        placeholderTextColor={Colors.textSecondary}
+                                        value={formImageUrl}
+                                        onChangeText={setFormImageUrl}
+                                    />
+                                </View>
+                                <View style={styles.formGroup}>
+                                    <Text style={styles.label}>Description</Text>
+                                    <TextInput
+                                        style={[styles.modalInput, styles.textArea]}
+                                        placeholder="Enter description"
+                                        placeholderTextColor={Colors.textSecondary}
+                                        value={formDescription}
+                                        onChangeText={setFormDescription}
+                                        multiline
+                                        numberOfLines={4}
+                                        textAlignVertical="top"
+                                    />
+                                </View>
+                                {formNodeType === 'product' && (
+                                    <View style={styles.formGroup}>
+                                        <Text style={styles.label}>Options</Text>
+                                        <TouchableOpacity
+                                            style={styles.selectorButton}
+                                            onPress={() => {
+                                                setParentTypeFilter('option');
+                                                setParentSearchQuery('');
+                                                setIsMultiSelectModalVisible(true);
+                                            }}
+                                        >
+                                            <View style={{ flex: 1 }}>
+                                                {formSelectedOptions.length === 0 ? (
+                                                    <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>None Selected</Text>
+                                                ) : (
+                                                    Object.entries(
+                                                        formSelectedOptions.reduce((acc, optId) => {
+                                                            const optNode = nodes.find(n => n.id === optId);
+                                                            const groupTitle = nodes.find(n => n.id === optNode?.parentid)?.title || 'General';
+                                                            if (!acc[groupTitle]) acc[groupTitle] = [];
+                                                            if (optNode) acc[groupTitle].push(optNode.title);
+                                                            return acc;
+                                                        }, {} as Record<string, string[]>)
+                                                    ).map(([group, titles]) => (
+                                                        <Text key={group} style={styles.selectedOptionGroupText}>
+                                                            <Text style={{ fontWeight: '600' }}>{group}:</Text> {titles.join(', ')}
+                                                        </Text>
+                                                    ))
+                                                )}
+                                            </View>
+                                            <Text style={styles.selectorActionText}>Select</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+                            </>
+                        )}
                     </ScrollView>
                 </View>
             </Modal>
@@ -529,6 +624,66 @@ export function NodesScreen() {
                                 <Text style={styles.emptyText}>
                                     {parentSearchQuery ? 'No matching nodes' : `No existing ${formatNodeType(parentTypeFilter).toLowerCase()}s found`}
                                 </Text>
+                            </View>
+                        }
+                    />
+                </View>
+            </Modal>
+
+            {/* Multi-Select Options Modal */}
+            <Modal
+                visible={isMultiSelectModalVisible}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setIsMultiSelectModalVisible(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <TouchableOpacity onPress={() => setIsMultiSelectModalVisible(false)}>
+                            <Text style={styles.modalCloseText}>Done</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.modalTitle}>Select Options</Text>
+                        <TouchableOpacity onPress={() => setFormSelectedOptions([])}>
+                            <Text style={styles.modalCloseText}>Clear</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.searchContainer}>
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search options..."
+                            placeholderTextColor={Colors.textSecondary}
+                            value={parentSearchQuery}
+                            onChangeText={setParentSearchQuery}
+                        />
+                    </View>
+
+                    <FlatList
+                        data={nodes.filter(n =>
+                            n.nodetype === 'option' &&
+                            n.title.toLowerCase().includes(parentSearchQuery.toLowerCase())
+                        )}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                style={styles.parentSelectItem}
+                                onPress={() => toggleOption(item.id)}
+                            >
+                                <View style={styles.nodeContent}>
+                                    <Text style={styles.nodeTitle}>{item.title}</Text>
+                                    <Text style={styles.nodeSubtitle}>
+                                        {nodes.find(n => n.id === item.parentid)?.title || 'No Group'}
+                                    </Text>
+                                </View>
+                                {formSelectedOptions.includes(item.id) && (
+                                    <View style={styles.checkMark} />
+                                )}
+                            </TouchableOpacity>
+                        )}
+                        contentContainerStyle={styles.list}
+                        ListEmptyComponent={
+                            <View style={styles.emptyContainer}>
+                                <Text style={styles.emptyText}>No options found</Text>
                             </View>
                         }
                     />
@@ -811,6 +966,11 @@ const styles = StyleSheet.create({
     },
     pickerTypeTextActive: {
         color: Colors.surface,
+    },
+    selectedOptionGroupText: {
+        fontSize: 15,
+        color: Colors.text,
+        marginBottom: 2,
     },
     typeTextActive: {
         color: Colors.surface,
