@@ -1,4 +1,4 @@
-# Turso Tasks App - Setup Instructions
+# Silvers - Setup Instructions
 
 > ⚡ **Quick Start**: Your credentials are already configured! See [QUICKSTART.md](QUICKSTART.md) for immediate testing.
 

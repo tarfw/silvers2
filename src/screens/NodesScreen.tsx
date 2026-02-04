@@ -101,6 +101,11 @@ export function NodesScreen() {
     const [isPulling, setIsPulling] = useState(false);
     const [isPushing, setIsPushing] = useState(false);
 
+    // Parent Selection State
+    const [isParentPickerVisible, setParentPickerVisible] = useState(false);
+    const [parentSearchQuery, setParentSearchQuery] = useState('');
+    const [parentTypeFilter, setParentTypeFilter] = useState<string>('category');
+
     const resetForm = () => {
         setFormTitle('');
         setFormNodeType('product');
@@ -229,6 +234,30 @@ export function NodesScreen() {
         if (type === 'optionset') return 'Options Set';
         return type.charAt(0).toUpperCase() + type.slice(1);
     };
+
+    const getParentTypesFor = (type: string): string[] => {
+        switch (type) {
+            case 'category': return ['category'];
+            case 'collection': return ['collection'];
+            case 'option': return ['optionset'];
+            default: return ['category', 'collection', 'product', 'optionset', 'option'];
+        }
+    };
+
+    const shouldShowParentId = (type: string) => {
+        return type !== 'product' && type !== 'optionset' && type !== 'collection';
+    };
+
+    const availableParents = nodes.filter(n => {
+        const typeMatches = n.nodetype === parentTypeFilter;
+        const isNotSelf = editingNode ? n.id !== editingNode.id : true;
+        const matchesSearch = n.title.toLowerCase().includes(parentSearchQuery.toLowerCase()) ||
+            (n.universalcode || '').toLowerCase().includes(parentSearchQuery.toLowerCase());
+
+        return typeMatches && isNotSelf && matchesSearch;
+    });
+
+    const selectedParentName = nodes.find(n => n.id === formParentId)?.title || formParentId || 'None';
 
     return (
         <View style={styles.container}>
@@ -375,16 +404,28 @@ export function NodesScreen() {
                             </View>
                         )}
 
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Parent ID</Text>
-                            <TextInput
-                                style={styles.modalInput}
-                                placeholder="Optional"
-                                placeholderTextColor={Colors.textSecondary}
-                                value={formParentId || ''}
-                                onChangeText={(val) => setFormParentId(val || null)}
-                            />
-                        </View>
+                        {shouldShowParentId(formNodeType) && (
+                            <View style={styles.formGroup}>
+                                <Text style={styles.label}>Parent ID</Text>
+                                <TouchableOpacity
+                                    style={styles.selectorButton}
+                                    onPress={() => {
+                                        const allowedTypes = getParentTypesFor(formNodeType);
+                                        setParentTypeFilter(allowedTypes[0]);
+                                        setParentSearchQuery('');
+                                        setParentPickerVisible(true);
+                                    }}
+                                >
+                                    <Text style={[
+                                        styles.selectorButtonText,
+                                        !formParentId && { color: Colors.textSecondary }
+                                    ]}>
+                                        {selectedParentName}
+                                    </Text>
+                                    <Text style={styles.selectorActionText}>Change</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
 
                         <View style={styles.formGroup}>
                             <Text style={styles.label}>Payload</Text>
@@ -402,6 +443,98 @@ export function NodesScreen() {
                     </ScrollView>
                 </View>
             </Modal>
+
+            {/* Parent Selection Modal */}
+            <Modal
+                visible={isParentPickerVisible}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setParentPickerVisible(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <TouchableOpacity onPress={() => setParentPickerVisible(false)}>
+                            <Text style={styles.modalCloseText}>Back</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.modalTitle}>Select Parent</Text>
+                        <TouchableOpacity onPress={() => {
+                            setFormParentId(null);
+                            setParentPickerVisible(false);
+                        }}>
+                            <Text style={styles.modalCloseText}>Clear</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.searchContainer}>
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search existing nodes..."
+                            placeholderTextColor={Colors.textSecondary}
+                            value={parentSearchQuery}
+                            onChangeText={setParentSearchQuery}
+                            autoFocus
+                        />
+                    </View>
+
+                    {/* Only show type filter if multiple types are allowed */}
+                    {getParentTypesFor(formNodeType).length > 1 && (
+                        <View style={styles.pickerTypeFilterContainer}>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pickerTypeFilterScroll}>
+                                {getParentTypesFor(formNodeType).map((type) => (
+                                    <TouchableOpacity
+                                        key={type}
+                                        style={[
+                                            styles.pickerTypeButton,
+                                            parentTypeFilter === type && styles.pickerTypeButtonActive
+                                        ]}
+                                        onPress={() => setParentTypeFilter(type)}
+                                    >
+                                        <Text style={[
+                                            styles.pickerTypeText,
+                                            parentTypeFilter === type && styles.pickerTypeTextActive
+                                        ]}>
+                                            {formatNodeType(type)}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
+
+                    <FlatList
+                        data={availableParents}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                style={styles.parentSelectItem}
+                                onPress={() => {
+                                    setFormParentId(item.id);
+                                    setParentPickerVisible(false);
+                                }}
+                            >
+                                <View style={styles.nodeContent}>
+                                    <Text style={styles.nodeTitle}>{item.title}</Text>
+                                    <Text style={styles.nodeSubtitle}>
+                                        {formatNodeType(item.nodetype)} {item.universalcode ? `• ${item.universalcode}` : ''}
+                                    </Text>
+                                </View>
+                                {formParentId === item.id && (
+                                    <View style={styles.checkMark} />
+                                )}
+                            </TouchableOpacity>
+                        )}
+                        contentContainerStyle={styles.list}
+                        ListEmptyComponent={
+                            <View style={styles.emptyContainer}>
+                                <Text style={styles.emptyText}>
+                                    {parentSearchQuery ? 'No matching nodes' : `No existing ${formatNodeType(parentTypeFilter).toLowerCase()}s found`}
+                                </Text>
+                            </View>
+                        }
+                    />
+                </View>
+            </Modal>
+
         </View>
     );
 }
@@ -605,6 +738,79 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '500',
         color: Colors.textSecondary,
+    },
+    selectorButton: {
+        backgroundColor: '#FAFAFA',
+        borderRadius: 8,
+        padding: 16,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    selectorButtonText: {
+        fontSize: 16,
+        color: Colors.text,
+        flex: 1,
+    },
+    selectorActionText: {
+        fontSize: 14,
+        color: Colors.textSecondary,
+        fontWeight: '500',
+        marginLeft: 12,
+    },
+    searchContainer: {
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.separator,
+    },
+    searchInput: {
+        backgroundColor: '#FAFAFA',
+        borderRadius: 8,
+        padding: 12,
+        fontSize: 16,
+        color: Colors.text,
+    },
+    parentSelectItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 16,
+        paddingHorizontal: 24,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.separator,
+    },
+    checkMark: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: Colors.primary,
+        marginLeft: 12,
+    },
+    pickerTypeFilterContainer: {
+        backgroundColor: Colors.surface,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.separator,
+    },
+    pickerTypeFilterScroll: {
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    pickerTypeButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#F2F2F7',
+        marginRight: 8,
+    },
+    pickerTypeButtonActive: {
+        backgroundColor: Colors.primary,
+    },
+    pickerTypeText: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: Colors.textSecondary,
+    },
+    pickerTypeTextActive: {
+        color: Colors.surface,
     },
     typeTextActive: {
         color: Colors.surface,

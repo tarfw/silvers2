@@ -1,4 +1,4 @@
-# 🚀 READY TO RUN - Turso Tasks App
+# 🚀 READY TO RUN - Silvers
 
 ## ⚠️ CRITICAL: You Need Expo Dev Build!
 
@@ -24,7 +24,7 @@ These are already set in `.env` file!
 ### Step 1: Install Dependencies
 
 ```bash
-cd turso-tasks-app
+cd silvers
 npm install
 ```
 
@@ -98,7 +98,7 @@ npx expo start
 
 ### Project Structure:
 ```
-turso-tasks-app/
+silvers/
 ├── .env                      # Your credentials ✓
 ├── App.tsx                   # Main entry point
 ├── src/
@@ -183,7 +183,7 @@ turso-tasks-app/
 ### Run these commands now:
 
 ```bash
-cd turso-tasks-app
+cd silvers
 npm install
 turso db shell tar-tarapp < scripts/init-database.sql
 npm install -g eas-cli
