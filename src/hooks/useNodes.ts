@@ -43,21 +43,23 @@ export function useNodes() {
     useEffect(() => {
         const init = async () => {
             if (db && user) {
-                setIsLoading(true);
+                // 1. Load from local DB immediately for instant UI response
+                await loadNodes();
+
+                // 2. Perform pull in the background
                 try {
-                    console.log('[useNodes] Initial pull starting...');
+                    console.log('[useNodes] Background pull starting...');
                     await databaseManager.pull();
-                    console.log('[useNodes] Initial pull completed.');
+                    console.log('[useNodes] Background pull completed.');
+                    await loadNodes(); // Refresh after pull
                 } catch (error) {
-                    console.warn('[useNodes] Initial pull failed:', error);
-                } finally {
-                    await loadNodes();
-                    setIsLoading(false);
+                    console.warn('[useNodes] Background pull failed:', error);
                 }
             }
         };
         init();
     }, [db, user, loadNodes]);
+
 
     // Helper to generate a short unique ID (10 chars)
     const generateShortId = () => {
