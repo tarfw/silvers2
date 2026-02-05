@@ -79,10 +79,10 @@ export function CustomTabBar({ state, descriptors, navigation }: any) {
 
                         const getIcon = (name: string, focused: boolean) => {
                             switch (name) {
-                                case 'Home': return focused ? 'home' : 'home-outline';
+                                case 'Home': return focused ? 'storefront' : 'storefront-outline';
                                 case 'Collections': return focused ? 'search' : 'search-outline';
                                 case 'Cart': return focused ? 'cart' : 'cart-outline';
-                                case 'Menu': return focused ? 'menu' : 'menu-outline';
+                                case 'Menu': return focused ? 'grid' : 'grid-outline';
                                 default: return 'square';
                             }
                         };

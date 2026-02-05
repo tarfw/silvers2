@@ -1,10 +1,9 @@
+// Modern tab-based NodesScreen with premium design
 import React, { useState, useCallback } from 'react';
 import {
     View,
     Text,
     FlatList,
-    TouchableOpacity,
-    StyleSheet,
     RefreshControl,
     TextInput,
     Platform,
@@ -12,26 +11,15 @@ import {
     Modal,
     ScrollView,
     ActivityIndicator,
+    TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNodes } from '../hooks/useNodes';
 import { useAuth } from '../contexts/AuthContext';
 import { Node } from '../types';
 import { storage } from '../lib/storage';
 import { SecureImage } from '../components/SecureImage';
-
-const Colors = {
-    background: '#FFFFFF',
-    surface: '#FFFFFF',
-    primary: '#000000',
-    product: '#E5E5EA',
-    category: '#E5E5EA',
-    collection: '#E5E5EA',
-    text: '#000000',
-    textSecondary: '#636366',
-    separator: '#F2F2F7',
-    danger: '#FF3B30',
-};
-
 
 function NodeItem({
     node,
@@ -42,28 +30,43 @@ function NodeItem({
     onDelete: (node: Node) => void;
     onEdit: (node: Node) => void;
 }) {
+    const payload = node.payload && typeof node.payload === 'object' ? (node.payload as any) : {};
+
     return (
         <TouchableOpacity
-            style={styles.nodeItem}
             onPress={() => onEdit(node)}
             onLongPress={() => onDelete(node)}
-            activeOpacity={0.6}
-            delayLongPress={500}
+            className="flex-row items-center py-5 px-6 border-b border-silver-100/50 active:bg-silver-50"
+            activeOpacity={0.7}
         >
             {(node.nodetype === 'product' || node.nodetype === 'category' || node.nodetype === 'collection') && (
-                <SecureImage
-                    source={{ uri: node.payload && typeof node.payload === 'object' ? (node.payload as any).image : '' }}
-                    style={styles.nodeImage}
-                    fallbackComponent={<View style={styles.nodeImagePlaceholder} />}
-                />
+                <View className="w-14 h-14 rounded-md bg-silver-50 border border-silver-100 items-center justify-center overflow-hidden">
+                    <SecureImage
+                        source={{ uri: payload.image }}
+                        className="w-full h-full"
+                        fallbackComponent={<Ionicons name="cube-outline" size={24} color="#AEAEB2" />}
+                    />
+                </View>
             )}
-            <View style={styles.nodeContent}>
-                <Text style={styles.nodeTitle}>{node.title}</Text>
-                <Text style={styles.nodeSubtitle}>
-                    {node.nodetype} {node.universalcode ? `• ${node.universalcode}` : ''}
-                </Text>
+
+            <View className={`flex-1 ${(node.nodetype === 'product' || node.nodetype === 'category' || node.nodetype === 'collection') ? 'ml-4' : ''} justify-center`}>
+                <Text className="text-[17px] font-bold text-black tracking-tight mb-1">{node.title}</Text>
+                <View className="flex-row items-center">
+                    <View className="bg-silver-100 px-2 py-0.5 rounded-md mr-2">
+                        <Text className="text-[9px] font-bold text-brand-secondary uppercase tracking-widest">
+                            {node.nodetype === 'optionset' ? 'Group' : node.nodetype}
+                        </Text>
+                    </View>
+                    {node.universalcode ? (
+                        <Text className="text-[12px] font-medium text-brand-secondary">
+                            {node.universalcode}
+                        </Text>
+                    ) : null}
+                </View>
             </View>
-        </TouchableOpacity >
+
+            <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+        </TouchableOpacity>
     );
 }
 
@@ -285,81 +288,131 @@ export function NodesScreen() {
         return matchesType && matchesSearch;
     });
 
-    const filterOptions = [
-        { label: 'All', value: 'all' },
-        { label: 'Products', value: 'product' },
-        { label: 'Collections', value: 'collection' },
-        { label: 'Categories', value: 'category' },
-        { label: 'Groups', value: 'optionset' },
-        { label: 'Options', value: 'option' },
+    const filterTabs = [
+        { label: 'All', value: 'all', icon: 'apps-outline' },
+        { label: 'Products', value: 'product', icon: 'cube-outline' },
+        { label: 'Collections', value: 'collection', icon: 'albums-outline' },
+        { label: 'Categories', value: 'category', icon: 'grid-outline' },
+        { label: 'Groups', value: 'optionset', icon: 'layers-outline' },
+        { label: 'Options', value: 'option', icon: 'list-outline' },
     ];
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <View style={styles.mainSearchContainer}>
-                    <TextInput
-                        style={styles.mainSearchInput}
-                        placeholder="Search..."
-                        placeholderTextColor={Colors.textSecondary}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        clearButtonMode="while-editing"
-                        autoCapitalize="none"
-                    />
+        <View className="flex-1 bg-white">
+            <SafeAreaView className="flex-1" edges={['top']}>
+                {/* Modern Header */}
+                <View className="px-6 pt-6 pb-4">
+                    <View className="flex-row justify-between items-end mb-6">
+                        <View>
+                            <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2.5px] mb-1">Catalog Manager</Text>
+                            <Text className="text-4xl font-bold text-black tracking-tighter">All Items</Text>
+                        </View>
+                        {isSyncing && (
+                            <ActivityIndicator size="small" color="#000" />
+                        )}
+                    </View>
+
+                    {/* Integrated Search */}
+                    <View className="flex-row items-center bg-silver-50 rounded-xl px-4 py-3 border border-silver-100">
+                        <Ionicons name="search" size={18} color="#AEAEB2" />
+                        <TextInput
+                            className="flex-1 ml-3 text-[16px] font-medium text-black"
+                            placeholder="Search by name or SKU..."
+                            placeholderTextColor="#AEAEB2"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            clearButtonMode="while-editing"
+                            autoCapitalize="none"
+                        />
+                    </View>
                 </View>
 
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.filterScroll}
-                    style={styles.filterContainer}
-                >
-                    {filterOptions.map((opt) => (
-                        <TouchableOpacity
-                            key={opt.value}
-                            style={[
-                                styles.filterChip,
-                                filterType === opt.value && styles.filterChipActive
-                            ]}
-                            onPress={() => setFilterType(opt.value)}
-                        >
-                            <Text style={[
-                                styles.filterChipText,
-                                filterType === opt.value && styles.filterChipTextActive
-                            ]}>
-                                {opt.label}
+                {/* Tab Bar Navigation */}
+                <View className="border-b border-silver-100">
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingHorizontal: 20 }}
+                    >
+                        {filterTabs.map((tab) => {
+                            const isActive = filterType === tab.value;
+                            return (
+                                <TouchableOpacity
+                                    key={tab.value}
+                                    onPress={() => setFilterType(tab.value)}
+                                    activeOpacity={0.7}
+                                    style={{ marginRight: 4 }}
+                                >
+                                    <View className={`px-4 py-3 border-b-2 ${isActive ? 'border-black' : 'border-transparent'}`}>
+                                        <View className="flex-row items-center">
+                                            <Ionicons
+                                                name={tab.icon as any}
+                                                size={16}
+                                                color={isActive ? '#000' : '#8E8E93'}
+                                            />
+                                            <Text className={`ml-2 text-[13px] font-bold uppercase tracking-wider ${isActive ? 'text-black' : 'text-brand-secondary'}`}>
+                                                {tab.label}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </View>
+
+                {/* Main Content List */}
+                <FlatList
+                    data={filteredNodes}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                        <NodeItem
+                            node={item}
+                            onDelete={handleDelete}
+                            onEdit={handleOpenEdit}
+                        />
+                    )}
+                    contentContainerStyle={{ paddingBottom: 100 }}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={isRefreshing}
+                            onRefresh={handleRefresh}
+                            tintColor="#000"
+                        />
+                    }
+                    ListEmptyComponent={
+                        <View className="flex-1 items-center justify-center pt-32 px-12">
+                            <View className="w-20 h-20 bg-silver-50 rounded-full items-center justify-center mb-6">
+                                <Ionicons name="search" size={32} color="#AEAEB2" />
+                            </View>
+                            <Text className="text-lg font-bold text-black text-center mb-2">
+                                {isLoading ? 'Gathering products...' : 'No results found'}
                             </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </View>
+                            <Text className="text-sm font-medium text-brand-secondary text-center leading-5 uppercase tracking-tighter">
+                                {searchQuery
+                                    ? `We couldn't find anything matching "${searchQuery}"`
+                                    : 'There are no items in this category yet. Start by creating a new one.'}
+                            </Text>
+                        </View>
+                    }
+                />
+            </SafeAreaView>
 
-            <FlatList
-                data={filteredNodes}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <NodeItem
-                        node={item}
-                        onDelete={handleDelete}
-                        onEdit={handleOpenEdit}
-                    />
-                )}
-                contentContainerStyle={styles.list}
-                refreshControl={
-                    <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-                }
-                ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>
-                            {isLoading ? 'Loading...' : 'No items found'}
-                        </Text>
-                    </View>
-                }
-            />
-
-            <TouchableOpacity style={styles.fab} onPress={handleOpenAdd}>
-                <Text style={styles.fabText}>+</Text>
+            {/* Modern FAB */}
+            <TouchableOpacity
+                onPress={handleOpenAdd}
+                activeOpacity={0.9}
+                className="absolute bottom-10 right-6 w-16 h-16 bg-black rounded-2xl items-center justify-center shadow-2xl"
+                style={{
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 12 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 16,
+                    elevation: 10
+                }}
+            >
+                <Ionicons name="add" size={32} color="#FFF" />
             </TouchableOpacity>
 
 
@@ -370,45 +423,38 @@ export function NodesScreen() {
                 transparent={true}
                 onRequestClose={() => setTypeSelectionVisible(false)}
             >
-                <View style={styles.drawerOverlay}>
+                <View className="flex-1 justify-end">
                     <TouchableOpacity
-                        style={styles.drawerDismiss}
-                        activeOpacity={1}
+                        className="absolute inset-0 bg-black/40"
                         onPress={() => setTypeSelectionVisible(false)}
+                        activeOpacity={1}
                     />
-                    <View style={styles.drawerContent}>
-                        <View style={styles.drawerHandle} />
-                        <Text style={styles.drawerTitle}>Create New</Text>
-                        <TouchableOpacity
-                            style={styles.drawerItem}
-                            onPress={() => handleSelectType('product')}
-                        >
-                            <Text style={styles.drawerItemText}>Product</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.drawerItem}
-                            onPress={() => handleSelectType('collection')}
-                        >
-                            <Text style={styles.drawerItemText}>Collection</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.drawerItem}
-                            onPress={() => handleSelectType('category')}
-                        >
-                            <Text style={styles.drawerItemText}>Category</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.drawerItem}
-                            onPress={() => handleSelectType('optionset')}
-                        >
-                            <Text style={styles.drawerItemText}>Options Group</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.drawerItem}
-                            onPress={() => handleSelectType('option')}
-                        >
-                            <Text style={styles.drawerItemText}>Option</Text>
-                        </TouchableOpacity>
+                    <View className="bg-white rounded-t-3xl px-8 pt-4 pb-12 shadow-2xl">
+                        <View className="w-12 h-1 bg-silver-100 rounded-full self-center mb-10" />
+                        <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[3px] mb-8 text-center">New Catalog Entry</Text>
+
+                        <View className="bg-silver-50 rounded-2xl overflow-hidden border border-silver-100">
+                            {[
+                                { type: 'product', label: 'Product', icon: 'cube-outline' },
+                                { type: 'collection', label: 'Collection', icon: 'albums-outline' },
+                                { type: 'category', label: 'Category', icon: 'grid-outline' },
+                                { type: 'optionset', label: 'Options Group', icon: 'layers-outline' },
+                                { type: 'option', label: 'Option', icon: 'list-outline' }
+                            ].map((item, index, arr) => (
+                                <TouchableOpacity
+                                    key={item.type}
+                                    onPress={() => handleSelectType(item.type as any)}
+                                    activeOpacity={0.7}
+                                    className={`flex-row items-center px-6 py-5 ${index !== arr.length - 1 ? 'border-b border-white' : ''}`}
+                                >
+                                    <View className="w-10 h-10 rounded-xl bg-white shadow-sm border border-silver-50 items-center justify-center">
+                                        <Ionicons name={item.icon as any} size={18} color="#000" />
+                                    </View>
+                                    <Text className="ml-4 flex-1 text-[15px] font-bold text-black uppercase tracking-wider">{item.label}</Text>
+                                    <Ionicons name="chevron-forward" size={14} color="#AEAEB2" />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -420,139 +466,141 @@ export function NodesScreen() {
                 presentationStyle="pageSheet"
                 onRequestClose={() => setModalVisible(false)}
             >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <TouchableOpacity onPress={() => setModalVisible(false)}>
-                            <Text style={styles.modalCloseText}>Cancel</Text>
+                <View className="flex-1 bg-white">
+                    {/* Modal Fixed Header */}
+                    <View className="px-6 pt-6 pb-4 border-b border-silver-100 flex-row items-center justify-between">
+                        <TouchableOpacity onPress={() => setModalVisible(false)} className="px-2" activeOpacity={0.7}>
+                            <Text className="text-brand-secondary font-medium">Cancel</Text>
                         </TouchableOpacity>
-                        <Text style={styles.modalTitle}>
+                        <Text className="text-[17px] font-bold text-black tracking-tight">
                             {editingNode ? 'Edit' : 'New'} {formatNodeType(formNodeType)}
                         </Text>
-                        <TouchableOpacity onPress={handleSave}>
-                            <Text style={styles.modalSaveText}>Done</Text>
+                        <TouchableOpacity onPress={handleSave} className="bg-black px-5 py-2 rounded-full" activeOpacity={0.8}>
+                            <Text className="text-[13px] font-bold text-white uppercase tracking-widest">Done</Text>
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView style={styles.modalScroll}>
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Title</Text>
-                            <TextInput
-                                style={styles.modalInput}
-                                placeholder="Enter title"
-                                placeholderTextColor={Colors.textSecondary}
-                                value={formTitle}
-                                onChangeText={setFormTitle}
-                            />
-                        </View>
-
-                        {formNodeType === 'product' && (
-                            <View style={styles.formGroup}>
-                                <Text style={styles.label}>Universal Code</Text>
-                                <TextInput
-                                    style={styles.modalInput}
-                                    placeholder="GTIN / Service Code"
-                                    placeholderTextColor={Colors.textSecondary}
-                                    value={formUniversalCode}
-                                    onChangeText={setFormUniversalCode}
-                                />
-                            </View>
-                        )}
-
-                        {shouldShowParentId(formNodeType) && (
-                            <View style={styles.formGroup}>
-                                <Text style={styles.label}>Parent</Text>
+                    <ScrollView
+                        className="flex-1 px-6"
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 60 }}
+                    >
+                        {/* Image Section */}
+                        {(formNodeType === 'product' || formNodeType === 'category' || formNodeType === 'collection') && (
+                            <View className="mt-8 mb-6">
+                                <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Display Identity</Text>
                                 <TouchableOpacity
-                                    style={styles.selectorButton}
-                                    onPress={() => {
-                                        const allowedTypes = getParentTypesFor(formNodeType);
-                                        setParentTypeFilter(allowedTypes[0]);
-                                        setParentSearchQuery('');
-                                        setParentPickerVisible(true);
-                                    }}
+                                    onPress={() => setIsImageOptionsVisible(true)}
+                                    activeOpacity={0.7}
+                                    className="w-full aspect-[4/3] bg-silver-50 rounded-xl border border-silver-100 overflow-hidden items-center justify-center p-4"
                                 >
-                                    <Text style={[
-                                        styles.selectorButtonText,
-                                        !formParentId && { color: Colors.textSecondary }
-                                    ]}>
-                                        {selectedParentName}
-                                    </Text>
-                                    <Text style={styles.selectorActionText}>Change</Text>
+                                    {formImageUrl ? (
+                                        <SecureImage source={{ uri: formImageUrl }} className="w-full h-full rounded-xl" />
+                                    ) : (
+                                        <View className="items-center">
+                                            <View className="w-16 h-16 bg-white rounded-full items-center justify-center shadow-sm mb-4 border border-silver-50">
+                                                <Ionicons name="image-outline" size={24} color="#AEAEB2" />
+                                            </View>
+                                            <Text className="text-[13px] font-bold text-brand-secondary uppercase tracking-widest">Tap to Add Image</Text>
+                                        </View>
+                                    )}
                                 </TouchableOpacity>
                             </View>
                         )}
 
-                        {(formNodeType === 'category' || formNodeType === 'collection' || formNodeType === 'product') && (
-                            <>
-                                <View style={styles.formGroup}>
-                                    <Text style={styles.label}>Image</Text>
-                                    <TouchableOpacity
-                                        style={styles.minimalImageContainer}
-                                        onPress={() => setIsImageOptionsVisible(true)}
-                                        activeOpacity={0.8}
-                                    >
-                                        {formImageUrl ? (
-                                            <SecureImage
-                                                source={{ uri: formImageUrl }}
-                                                style={styles.minimalImagePreview}
-                                                resizeMode="cover"
-                                            />
-                                        ) : (
-                                            <View style={styles.minimalImagePlaceholder}>
-                                                <Text style={styles.minimalImagePlaceholderText}>+ Add Image</Text>
-                                            </View>
-                                        )}
-                                    </TouchableOpacity>
-                                </View>
+                        {/* General Info */}
+                        <View className="mt-4">
+                            <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Identification</Text>
 
-                                <View style={styles.formGroup}>
-                                    <Text style={styles.label}>Description</Text>
-                                    <TextInput
-                                        style={[styles.modalInput, styles.textArea]}
-                                        placeholder="Enter description"
-                                        placeholderTextColor={Colors.textSecondary}
-                                        value={formDescription}
-                                        onChangeText={setFormDescription}
-                                        multiline
-                                        numberOfLines={4}
-                                        textAlignVertical="top"
-                                    />
-                                </View>
-                                {formNodeType === 'product' && (
-                                    <View style={styles.formGroup}>
-                                        <Text style={styles.label}>Options</Text>
-                                        <TouchableOpacity
-                                            style={styles.selectorButton}
-                                            onPress={() => {
-                                                setParentTypeFilter('option');
-                                                setParentSearchQuery('');
-                                                setIsMultiSelectModalVisible(true);
-                                            }}
-                                        >
-                                            <View style={{ flex: 1 }}>
-                                                {formSelectedOptions.length === 0 ? (
-                                                    <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>None Selected</Text>
-                                                ) : (
-                                                    Object.entries(
-                                                        formSelectedOptions.reduce((acc, optId) => {
-                                                            const optNode = nodes.find(n => n.id === optId);
-                                                            const groupTitle = nodes.find(n => n.id === optNode?.parentid)?.title || 'General';
-                                                            if (!acc[groupTitle]) acc[groupTitle] = [];
-                                                            if (optNode) acc[groupTitle].push(optNode.title);
-                                                            return acc;
-                                                        }, {} as Record<string, string[]>)
-                                                    ).map(([group, titles]) => (
-                                                        <Text key={group} style={styles.selectedOptionGroupText}>
-                                                            <Text style={{ fontWeight: '600' }}>{group}:</Text> {titles.join(', ')}
-                                                        </Text>
-                                                    ))
-                                                )}
-                                            </View>
-                                            <Text style={styles.selectorActionText}>Select</Text>
-                                        </TouchableOpacity>
+                            <View className="mb-6">
+                                <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Public Title</Text>
+                                <TextInput
+                                    className="bg-silver-50 rounded-lg px-5 py-4 border border-silver-100 text-[16px] font-medium text-black"
+                                    placeholder="Enter title..."
+                                    placeholderTextColor="#AEAEB2"
+                                    value={formTitle}
+                                    onChangeText={setFormTitle}
+                                />
+                            </View>
+
+                            <View className="mb-6">
+                                <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Universal ID / SKU</Text>
+                                <TextInput
+                                    className="bg-silver-50 rounded-lg px-5 py-4 border border-silver-100 text-[16px] font-medium text-black"
+                                    placeholder="Optional unique code..."
+                                    placeholderTextColor="#AEAEB2"
+                                    value={formUniversalCode}
+                                    onChangeText={setFormUniversalCode}
+                                    autoCapitalize="characters"
+                                />
+                            </View>
+                        </View>
+
+                        {/* Node Specific Configs */}
+                        {shouldShowParentId(formNodeType) && (
+                            <View className="mb-6">
+                                <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Structure</Text>
+                                <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Parent Group</Text>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setParentTypeFilter(getParentTypesFor(formNodeType)[0]);
+                                        setParentPickerVisible(true);
+                                    }}
+                                    activeOpacity={0.7}
+                                    className="bg-silver-50 rounded-lg px-5 py-4 border border-silver-100 flex-row justify-between items-center"
+                                >
+                                    <Text className="text-[16px] font-medium text-black">{selectedParentName}</Text>
+                                    <View className="flex-row items-center">
+                                        <Text className="text-[11px] font-bold text-brand-secondary uppercase mr-2">Change</Text>
+                                        <Ionicons name="chevron-forward" size={14} color="#AEAEB2" />
                                     </View>
-                                )}
-                            </>
+                                </TouchableOpacity>
+                            </View>
                         )}
+
+                        {formNodeType === 'product' && (
+                            <View className="mb-6">
+                                <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Attributes</Text>
+                                <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Selected Options</Text>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setParentTypeFilter('option');
+                                        setParentSearchQuery('');
+                                        setIsMultiSelectModalVisible(true);
+                                    }}
+                                    activeOpacity={0.7}
+                                    className="bg-silver-50 rounded-lg px-5 py-4 border border-silver-100 min-h-[56px] justify-center"
+                                >
+                                    {formSelectedOptions.length > 0 ? (
+                                        <View className="flex-row flex-wrap gap-2">
+                                            {formSelectedOptions.map(id => (
+                                                <View key={id} className="bg-black px-3 py-1.5 rounded-full">
+                                                    <Text className="text-[11px] font-bold text-white uppercase tracking-tight">
+                                                        {nodes.find(n => n.id === id)?.title || id}
+                                                    </Text>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    ) : (
+                                        <Text className="text-brand-secondary italic">Manage variants and options...</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        <View className="mb-10">
+                            <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Detailing</Text>
+                            <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Public Description</Text>
+                            <TextInput
+                                className="bg-silver-50 rounded-xl px-5 py-4 border border-silver-100 text-[16px] font-medium text-black min-h-[120px]"
+                                placeholder="Describe this item..."
+                                placeholderTextColor="#AEAEB2"
+                                multiline
+                                value={formDescription}
+                                onChangeText={setFormDescription}
+                                textAlignVertical="top"
+                            />
+                        </View>
                     </ScrollView>
                 </View>
             </Modal>
@@ -564,25 +612,24 @@ export function NodesScreen() {
                 animationType="slide"
                 onRequestClose={() => setIsImageOptionsVisible(false)}
             >
-                <TouchableOpacity
-                    style={styles.drawerOverlay}
-                    activeOpacity={1}
-                    onPress={() => setIsImageOptionsVisible(false)}
-                >
-                    <View style={styles.drawerContent}>
-                        <View style={styles.drawerHandle} />
+                <View className="flex-1 justify-end">
+                    <TouchableOpacity
+                        className="absolute inset-0 bg-black/40"
+                        onPress={() => setIsImageOptionsVisible(false)}
+                        activeOpacity={1}
+                    />
+                    <View className="bg-white rounded-t-3xl px-8 pt-4 pb-12 shadow-2xl">
+                        <View className="w-12 h-1 bg-silver-100 rounded-full self-center mb-10" />
+                        <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[3px] mb-8 text-center">Manage Media</Text>
 
-                        <View style={styles.drawerContentPadding}>
+                        <View className="bg-silver-50 rounded-2xl overflow-hidden border border-silver-100">
                             <TouchableOpacity
-                                style={[styles.uploadButton, { marginBottom: 12 }]}
                                 onPress={async () => {
                                     setIsUploading(true);
                                     try {
                                         const result = await storage.uploadImage();
                                         if (result) setFormImageUrl(result.publicUrl);
-                                        // setIsImageOptionsVisible(false); // Close drawer on success? Or keep open to see URL update? 
-                                        // Let's keep it open so they see the URL change, or we can close it. 
-                                        // User asked for "url, replace, remove all come as bottom drawer", so keep it there.
+                                        setIsImageOptionsVisible(false);
                                     } catch (e: any) {
                                         Alert.alert('Upload Failed', e.message);
                                     } finally {
@@ -590,30 +637,33 @@ export function NodesScreen() {
                                     }
                                 }}
                                 disabled={isUploading}
+                                activeOpacity={0.7}
+                                className="flex-row items-center px-6 py-5 border-b border-white"
                             >
-                                {isUploading ? (
-                                    <ActivityIndicator size="small" color={Colors.primary} />
-                                ) : (
-                                    <Text style={styles.uploadButtonText}>
-                                        {formImageUrl ? 'Replace Image' : 'Upload Image'}
-                                    </Text>
-                                )}
+                                <View className="w-10 h-10 rounded-xl bg-white shadow-sm border border-silver-50 items-center justify-center">
+                                    {isUploading ? <ActivityIndicator size="small" color="#000" /> : <Ionicons name="cloud-upload-outline" size={18} color="#000" />}
+                                </View>
+                                <Text className="ml-4 flex-1 text-[15px] font-bold text-black uppercase tracking-wider">{formImageUrl ? 'Replace Image' : 'Upload Image'}</Text>
                             </TouchableOpacity>
 
-                            {formImageUrl ? (
+                            {formImageUrl && (
                                 <TouchableOpacity
-                                    style={[styles.removeImageButton, { alignSelf: 'stretch', alignItems: 'center' }]}
                                     onPress={() => {
                                         setFormImageUrl('');
-                                        // setIsImageOptionsVisible(false); // Optional: close on remove
+                                        setIsImageOptionsVisible(false);
                                     }}
+                                    activeOpacity={0.7}
+                                    className="flex-row items-center px-6 py-5"
                                 >
-                                    <Text style={styles.removeImageText}>Remove Image</Text>
+                                    <View className="w-10 h-10 rounded-xl bg-white shadow-sm border border-silver-50 items-center justify-center">
+                                        <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                                    </View>
+                                    <Text className="ml-4 flex-1 text-[15px] font-bold text-red-500 uppercase tracking-wider">Remove Identity</Text>
                                 </TouchableOpacity>
-                            ) : null}
+                            )}
                         </View>
                     </View>
-                </TouchableOpacity>
+                </View>
             </Modal>
 
             {/* Deletion Confirmation Drawer */}
@@ -623,33 +673,44 @@ export function NodesScreen() {
                 animationType="slide"
                 onRequestClose={() => setIsDeleteDrawerVisible(false)}
             >
-                <TouchableOpacity
-                    style={styles.drawerOverlay}
-                    activeOpacity={1}
-                    onPress={() => setIsDeleteDrawerVisible(false)}
-                >
-                    <View style={styles.drawerContent}>
-                        <View style={styles.drawerHandle} />
-                        <Text style={[styles.drawerTitle, { color: Colors.danger }]}>Confirm Delete?</Text>
-                        <Text style={[styles.nodeSubtitle, { marginBottom: 24, fontSize: 15 }]}>
-                            Are you sure you want to delete <Text style={{ fontWeight: '600', color: Colors.text }}>{nodeToDelete?.title}</Text>? This action cannot be undone.
-                        </Text>
+                <View className="flex-1 justify-end">
+                    <TouchableOpacity
+                        className="absolute inset-0 bg-black/40"
+                        onPress={() => setIsDeleteDrawerVisible(false)}
+                        activeOpacity={1}
+                    />
+                    <View className="bg-white rounded-t-3xl px-8 pt-4 pb-12 shadow-2xl">
+                        <View className="w-12 h-1 bg-silver-100 rounded-full self-center mb-10" />
 
-                        <TouchableOpacity
-                            style={[styles.deleteConfirmButton, { marginBottom: 12 }]}
-                            onPress={confirmDelete}
-                        >
-                            <Text style={styles.deleteConfirmButtonText}>Delete</Text>
-                        </TouchableOpacity>
+                        <View className="items-center mb-8">
+                            <View className="w-20 h-20 bg-red-50 rounded-full items-center justify-center mb-6 border border-red-100">
+                                <Ionicons name="alert-circle-outline" size={40} color="#FF3B30" />
+                            </View>
+                            <Text className="text-2xl font-bold text-black tracking-tight mb-2">Delete Item?</Text>
+                            <Text className="text-[14px] font-medium text-brand-secondary text-center leading-5 uppercase tracking-tighter px-4">
+                                You are about to permanently remove "{nodeToDelete?.title}". This action is irreversible.
+                            </Text>
+                        </View>
 
-                        <TouchableOpacity
-                            style={[styles.drawerItem, { borderBottomWidth: 0, alignItems: 'center' }]}
-                            onPress={() => setIsDeleteDrawerVisible(false)}
-                        >
-                            <Text style={[styles.drawerItemText, { color: Colors.textSecondary }]}>Cancel</Text>
-                        </TouchableOpacity>
+                        <View className="gap-3">
+                            <TouchableOpacity
+                                onPress={confirmDelete}
+                                activeOpacity={0.9}
+                                className="bg-red-500 py-5 rounded-xl items-center justify-center shadow-lg shadow-red-200"
+                            >
+                                <Text className="text-white font-bold uppercase tracking-[2px]">Confirm Destruction</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={() => setIsDeleteDrawerVisible(false)}
+                                activeOpacity={0.7}
+                                className="bg-silver-50 py-5 rounded-xl items-center justify-center border border-silver-100"
+                            >
+                                <Text className="text-black font-bold uppercase tracking-[2px]">Cancel</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </TouchableOpacity>
+                </View>
             </Modal>
 
             {/* Parent Selection Modal */}
@@ -659,83 +720,58 @@ export function NodesScreen() {
                 presentationStyle="pageSheet"
                 onRequestClose={() => setParentPickerVisible(false)}
             >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <TouchableOpacity onPress={() => setParentPickerVisible(false)}>
-                            <Text style={styles.modalCloseText}>Back</Text>
+                <View className="flex-1 bg-white">
+                    <View className="px-6 pt-6 pb-4 border-b border-silver-100 flex-row items-center justify-between">
+                        <TouchableOpacity onPress={() => setParentPickerVisible(false)} className="px-2" activeOpacity={0.7}>
+                            <Text className="text-brand-secondary font-medium">Back</Text>
                         </TouchableOpacity>
-                        <Text style={styles.modalTitle}>Select Parent</Text>
-                        <TouchableOpacity onPress={() => {
-                            setFormParentId(null);
-                            setParentPickerVisible(false);
-                        }}>
-                            <Text style={styles.modalCloseText}>Clear</Text>
+                        <Text className="text-[17px] font-bold text-black tracking-tight">Select Parent</Text>
+                        <TouchableOpacity onPress={() => { setFormParentId(null); setParentPickerVisible(false); }} className="px-2" activeOpacity={0.7}>
+                            <Text className="text-red-500 font-bold uppercase text-[11px] tracking-widest">Clear</Text>
                         </TouchableOpacity>
                     </View>
 
-                    <View style={styles.searchContainer}>
-                        <TextInput
-                            style={styles.searchInput}
-                            placeholder="Search existing nodes..."
-                            placeholderTextColor={Colors.textSecondary}
-                            value={parentSearchQuery}
-                            onChangeText={setParentSearchQuery}
-                            autoFocus
-                        />
-                    </View>
-
-                    {/* Only show type filter if multiple types are allowed */}
-                    {getParentTypesFor(formNodeType).length > 1 && (
-                        <View style={styles.pickerTypeFilterContainer}>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pickerTypeFilterScroll}>
-                                {getParentTypesFor(formNodeType).map((type) => (
-                                    <TouchableOpacity
-                                        key={type}
-                                        style={[
-                                            styles.pickerTypeButton,
-                                            parentTypeFilter === type && styles.pickerTypeButtonActive
-                                        ]}
-                                        onPress={() => setParentTypeFilter(type)}
-                                    >
-                                        <Text style={[
-                                            styles.pickerTypeText,
-                                            parentTypeFilter === type && styles.pickerTypeTextActive
-                                        ]}>
-                                            {formatNodeType(type)}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
+                    <View className="px-6 pt-4 pb-2">
+                        <View className="flex-row items-center bg-silver-50 rounded-2xl px-4 py-3 border border-silver-100">
+                            <Ionicons name="search" size={18} color="#AEAEB2" />
+                            <TextInput
+                                className="flex-1 ml-3 text-[16px] font-medium text-black"
+                                placeholder="Search groups..."
+                                placeholderTextColor="#AEAEB2"
+                                value={parentSearchQuery}
+                                onChangeText={setParentSearchQuery}
+                                autoFocus
+                            />
                         </View>
-                    )}
+                    </View>
 
                     <FlatList
                         data={availableParents}
                         keyExtractor={(item) => item.id}
                         renderItem={({ item }) => (
                             <TouchableOpacity
-                                style={styles.parentSelectItem}
-                                onPress={() => {
-                                    setFormParentId(item.id);
-                                    setParentPickerVisible(false);
-                                }}
+                                onPress={() => { setFormParentId(item.id); setParentPickerVisible(false); }}
+                                activeOpacity={0.7}
+                                className="flex-row items-center py-4 px-6 border-b border-silver-100/50"
                             >
-                                <View style={styles.nodeContent}>
-                                    <Text style={styles.nodeTitle}>{item.title}</Text>
-                                    <Text style={styles.nodeSubtitle}>
+                                <View className="flex-1">
+                                    <Text className="text-[16px] font-bold text-black mb-0.5">{item.title}</Text>
+                                    <Text className="text-[11px] font-medium text-brand-secondary uppercase tracking-widest">
                                         {formatNodeType(item.nodetype)} {item.universalcode ? `• ${item.universalcode}` : ''}
                                     </Text>
                                 </View>
                                 {formParentId === item.id && (
-                                    <View style={styles.checkMark} />
+                                    <View className="w-5 h-5 rounded-lg bg-black items-center justify-center">
+                                        <Ionicons name="checkmark" size={12} color="#FFF" />
+                                    </View>
                                 )}
                             </TouchableOpacity>
                         )}
-                        contentContainerStyle={styles.list}
+                        contentContainerStyle={{ paddingBottom: 40 }}
                         ListEmptyComponent={
-                            <View style={styles.emptyContainer}>
-                                <Text style={styles.emptyText}>
-                                    {parentSearchQuery ? 'No matching nodes' : `No existing ${formatNodeType(parentTypeFilter).toLowerCase()}s found`}
+                            <View className="items-center justify-center pt-20 px-12">
+                                <Text className="text-sm font-medium text-brand-secondary text-center uppercase tracking-widest">
+                                    {parentSearchQuery ? 'No matches found' : `No ${formatNodeType(parentTypeFilter).toLowerCase()}s available`}
                                 </Text>
                             </View>
                         }
@@ -750,25 +786,28 @@ export function NodesScreen() {
                 presentationStyle="pageSheet"
                 onRequestClose={() => setIsMultiSelectModalVisible(false)}
             >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <TouchableOpacity onPress={() => setIsMultiSelectModalVisible(false)}>
-                            <Text style={styles.modalCloseText}>Done</Text>
+                <View className="flex-1 bg-white">
+                    <View className="px-6 pt-6 pb-4 border-b border-silver-100 flex-row items-center justify-between">
+                        <TouchableOpacity onPress={() => setIsMultiSelectModalVisible(false)} className="px-2" activeOpacity={0.7}>
+                            <Text className="text-black font-bold uppercase text-[11px] tracking-widest">Done</Text>
                         </TouchableOpacity>
-                        <Text style={styles.modalTitle}>Select Options</Text>
-                        <TouchableOpacity onPress={() => setFormSelectedOptions([])}>
-                            <Text style={styles.modalCloseText}>Clear</Text>
+                        <Text className="text-[17px] font-bold text-black tracking-tight">Select Options</Text>
+                        <TouchableOpacity onPress={() => setFormSelectedOptions([])} className="px-2" activeOpacity={0.7}>
+                            <Text className="text-red-500 font-bold uppercase text-[11px] tracking-widest">Clear All</Text>
                         </TouchableOpacity>
                     </View>
 
-                    <View style={styles.searchContainer}>
-                        <TextInput
-                            style={styles.searchInput}
-                            placeholder="Search options..."
-                            placeholderTextColor={Colors.textSecondary}
-                            value={parentSearchQuery}
-                            onChangeText={setParentSearchQuery}
-                        />
+                    <View className="px-6 pt-4 pb-2">
+                        <View className="flex-row items-center bg-silver-50 rounded-2xl px-4 py-3 border border-silver-100">
+                            <Ionicons name="search" size={18} color="#AEAEB2" />
+                            <TextInput
+                                className="flex-1 ml-3 text-[16px] font-medium text-black"
+                                placeholder="Search all choices..."
+                                placeholderTextColor="#AEAEB2"
+                                value={parentSearchQuery}
+                                onChangeText={setParentSearchQuery}
+                            />
+                        </View>
                     </View>
 
                     <FlatList
@@ -777,26 +816,30 @@ export function NodesScreen() {
                             n.title.toLowerCase().includes(parentSearchQuery.toLowerCase())
                         )}
                         keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={styles.parentSelectItem}
-                                onPress={() => toggleOption(item.id)}
-                            >
-                                <View style={styles.nodeContent}>
-                                    <Text style={styles.nodeTitle}>{item.title}</Text>
-                                    <Text style={styles.nodeSubtitle}>
-                                        {nodes.find(n => n.id === item.parentid)?.title || 'No Group'}
-                                    </Text>
-                                </View>
-                                {formSelectedOptions.includes(item.id) && (
-                                    <View style={styles.checkMark} />
-                                )}
-                            </TouchableOpacity>
-                        )}
-                        contentContainerStyle={styles.list}
+                        renderItem={({ item }) => {
+                            const isSelected = formSelectedOptions.includes(item.id);
+                            return (
+                                <TouchableOpacity
+                                    onPress={() => toggleOption(item.id)}
+                                    activeOpacity={0.7}
+                                    className={`flex-row items-center py-4 px-6 border-b border-silver-100/50 ${isSelected ? 'bg-silver-50' : ''}`}
+                                >
+                                    <View className="flex-1">
+                                        <Text className={`text-[16px] font-bold ${isSelected ? 'text-black' : 'text-black/80'} mb-0.5`}>{item.title}</Text>
+                                        <Text className="text-[10px] font-medium text-brand-secondary uppercase tracking-widest">
+                                            Group: {nodes.find(n => n.id === item.parentid)?.title || 'Uncategorized'}
+                                        </Text>
+                                    </View>
+                                    <View className={`w-6 h-6 rounded-lg border items-center justify-center ${isSelected ? 'bg-black border-black' : 'border-silver-200 bg-white'}`}>
+                                        {isSelected && <Ionicons name="checkmark" size={14} color="#FFF" />}
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        }}
+                        contentContainerStyle={{ paddingBottom: 40 }}
                         ListEmptyComponent={
-                            <View style={styles.emptyContainer}>
-                                <Text style={styles.emptyText}>No options found</Text>
+                            <View className="items-center justify-center pt-20 px-12">
+                                <Text className="text-sm font-medium text-brand-secondary text-center uppercase tracking-widest">No options found</Text>
                             </View>
                         }
                     />
@@ -807,444 +850,3 @@ export function NodesScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.background,
-    },
-    header: {
-        paddingHorizontal: 24,
-        backgroundColor: Colors.surface,
-        paddingBottom: 12,
-    },
-    headerTop: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 28,
-        fontWeight: '600',
-        color: Colors.text,
-        letterSpacing: -0.5,
-    },
-    userEmail: {
-        fontSize: 13,
-        color: Colors.textSecondary,
-        marginTop: 2,
-    },
-    signOutButton: {
-        paddingVertical: 4,
-    },
-    signOutText: {
-        color: Colors.textSecondary,
-        fontSize: 14,
-        fontWeight: '400',
-    },
-    mainSearchContainer: {
-        marginTop: 0,
-    },
-    mainSearchInput: {
-        backgroundColor: '#F2F2F7',
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        fontSize: 16,
-        color: Colors.text,
-    },
-    filterContainer: {
-        marginTop: 12,
-    },
-    filterScroll: {
-        paddingRight: 24,
-    },
-    filterChip: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 16,
-        backgroundColor: '#F2F2F7',
-        marginRight: 8,
-    },
-    filterChipActive: {
-        backgroundColor: Colors.primary,
-    },
-    filterChipText: {
-        fontSize: 13,
-        fontWeight: '500',
-        color: Colors.textSecondary,
-    },
-    filterChipTextActive: {
-        color: Colors.surface,
-    },
-    list: {
-        paddingHorizontal: 24,
-        paddingTop: 8,
-        paddingBottom: 160,
-    },
-    nodeItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.separator,
-    },
-    nodeContent: {
-        flex: 1,
-    },
-    nodeTitle: {
-        fontSize: 17,
-        fontWeight: '500',
-        color: Colors.text,
-    },
-    nodeSubtitle: {
-        fontSize: 13,
-        color: Colors.textSecondary,
-        marginTop: 2,
-        textTransform: 'lowercase',
-    },
-    deleteButton: {
-        paddingLeft: 12,
-    },
-    deleteButtonText: {
-        color: Colors.textSecondary,
-        fontSize: 12,
-        fontWeight: '400',
-    },
-    fab: {
-        position: 'absolute',
-        bottom: 110,
-        right: 24,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: Colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    fabText: {
-        color: Colors.surface,
-        fontSize: 24,
-        fontWeight: '300',
-    },
-    syncBar: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: Colors.surface,
-        borderTopWidth: 1,
-        borderTopColor: Colors.separator,
-        paddingVertical: 16,
-        paddingHorizontal: 24,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 16,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    emptyContainer: {
-        alignItems: 'center',
-        paddingTop: 100,
-    },
-    emptyText: {
-        color: Colors.textSecondary,
-        fontSize: 15,
-    },
-    /* Modal Styles */
-    modalContainer: {
-        flex: 1,
-        backgroundColor: Colors.background,
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 16,
-        backgroundColor: Colors.surface,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.separator,
-    },
-    modalCloseText: {
-        color: Colors.textSecondary,
-        fontSize: 16,
-    },
-    modalSaveText: {
-        color: Colors.text,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    modalTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        textTransform: 'capitalize',
-    },
-    modalScroll: {
-        flex: 1,
-        padding: 24,
-    },
-    formGroup: {
-        marginBottom: 24,
-    },
-    label: {
-        fontSize: 12,
-        color: Colors.textSecondary,
-        marginBottom: 8,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-        fontWeight: '500',
-    },
-    modalInput: {
-        backgroundColor: '#FAFAFA',
-        borderRadius: 8,
-        padding: 16,
-        fontSize: 16,
-        color: Colors.text,
-    },
-    textArea: {
-        height: 120,
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    },
-    typeSelector: {
-        flexDirection: 'row',
-        backgroundColor: '#FAFAFA',
-        padding: 4,
-        borderRadius: 8,
-    },
-    typeButton: {
-        flex: 1,
-        height: 36,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 6,
-    },
-    typeButtonActive: {
-        backgroundColor: Colors.primary,
-    },
-    typeText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: Colors.textSecondary,
-    },
-    selectorButton: {
-        backgroundColor: '#FAFAFA',
-        borderRadius: 8,
-        padding: 16,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    selectorButtonText: {
-        fontSize: 16,
-        color: Colors.text,
-        flex: 1,
-    },
-    selectorActionText: {
-        fontSize: 14,
-        color: Colors.textSecondary,
-        fontWeight: '500',
-        marginLeft: 12,
-    },
-    searchContainer: {
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.separator,
-    },
-    searchInput: {
-        backgroundColor: '#FAFAFA',
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 16,
-        color: Colors.text,
-    },
-    parentSelectItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 16,
-        paddingHorizontal: 24,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.separator,
-    },
-    checkMark: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: Colors.primary,
-        marginLeft: 12,
-    },
-    pickerTypeFilterContainer: {
-        backgroundColor: Colors.surface,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.separator,
-    },
-    pickerTypeFilterScroll: {
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-    },
-    pickerTypeButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: '#F2F2F7',
-        marginRight: 8,
-    },
-    pickerTypeButtonActive: {
-        backgroundColor: Colors.primary,
-    },
-    pickerTypeText: {
-        fontSize: 13,
-        fontWeight: '500',
-        color: Colors.textSecondary,
-    },
-    pickerTypeTextActive: {
-        color: Colors.surface,
-    },
-    selectedOptionGroupText: {
-        fontSize: 15,
-        color: Colors.text,
-        marginBottom: 2,
-    },
-    typeTextActive: {
-        color: Colors.surface,
-    },
-    readOnlyTypeContainer: {
-        backgroundColor: '#F2F2F7',
-        borderRadius: 8,
-        padding: 16,
-    },
-    readOnlyTypeText: {
-        fontSize: 16,
-        color: Colors.textSecondary,
-        textTransform: 'capitalize',
-        fontWeight: '500',
-    },
-    /* Drawer Styles */
-    drawerOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        justifyContent: 'flex-end',
-    },
-    drawerDismiss: {
-        flex: 1,
-    },
-    drawerContent: {
-        backgroundColor: Colors.surface,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-        paddingHorizontal: 24,
-    },
-    drawerHandle: {
-        width: 40,
-        height: 5,
-        backgroundColor: Colors.separator,
-        borderRadius: 2.5,
-        alignSelf: 'center',
-        marginTop: 12,
-        marginBottom: 20,
-    },
-    drawerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 16,
-        color: Colors.text,
-    },
-    drawerItem: {
-        paddingVertical: 18,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.separator,
-    },
-    drawerItemText: {
-        fontSize: 17,
-        fontWeight: '400',
-        color: Colors.text,
-    },
-    /* Image and Upload Styles */
-    nodeImage: {
-        width: 44,
-        height: 44,
-        borderRadius: 8,
-        marginRight: 12,
-        backgroundColor: '#F2F2F7',
-    },
-    nodeImagePlaceholder: {
-        width: 44,
-        height: 44,
-        borderRadius: 8,
-        marginRight: 12,
-        backgroundColor: '#F2F2F7',
-    },
-    /* Minimal Image Edit Styles */
-    minimalImageContainer: {
-        height: 200,
-        backgroundColor: '#F2F2F7',
-        borderRadius: 12,
-        overflow: 'hidden',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    minimalImagePreview: {
-        width: '100%',
-        height: '100%',
-    },
-    minimalImagePlaceholder: {
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    minimalImagePlaceholderText: {
-        color: Colors.primary,
-        fontSize: 16,
-        fontWeight: '500',
-    },
-    deleteConfirmButton: {
-        backgroundColor: Colors.danger,
-        padding: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-    },
-    deleteConfirmButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    drawerContentPadding: {
-        paddingTop: 8,
-    },
-
-    uploadButton: {
-        marginTop: 12,
-        backgroundColor: '#FAFAFA',
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderStyle: 'dashed',
-        borderColor: Colors.separator,
-    },
-    uploadButtonText: {
-        color: Colors.text,
-        fontSize: 14,
-        fontWeight: '500',
-    },
-    imagePreviewContainer: {
-        marginTop: 16,
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#FAFAFA',
-        padding: 8,
-        borderRadius: 12,
-    },
-    imagePreview: {
-        width: 80,
-        height: 80,
-        borderRadius: 8,
-    },
-    removeImageButton: {
-        marginLeft: 16,
-        padding: 8,
-    },
-    removeImageText: {
-        color: Colors.danger,
-        fontSize: 14,
-        fontWeight: '500',
-    },
-});

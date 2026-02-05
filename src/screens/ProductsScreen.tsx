@@ -32,9 +32,6 @@ function ProductItem({ node }: { node: Node }) {
             />
             <View className="p-3">
                 <Text className="text-sm font-bold text-black" numberOfLines={1}>{node.title}</Text>
-                <Text className="text-[11px] text-brand-secondary font-medium tracking-wide mt-0.5">
-                    {node.universalcode ? `#${node.universalcode}` : 'NO CODE'}
-                </Text>
             </View>
         </TouchableOpacity>
     );

@@ -59,11 +59,7 @@ export function AppNavigator() {
                 name="Nodes"
                 component={NodesScreen}
                 options={{
-                    headerShown: true,
-                    headerTitle: 'All Items',
-                    headerBackTitle: 'Back',
-                    headerShadowVisible: false,
-                    headerStyle: { backgroundColor: '#FFFFFF' },
+                    headerShown: false,
                 }}
             />
             <Stack.Screen
