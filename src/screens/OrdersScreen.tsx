@@ -19,7 +19,18 @@ interface OrderStream {
     createdat: string;
     itemCount: number;
     totalQty: number;
+    statusOpcode: number;
+    creatorName: string;
+    creatorEmail: string;
 }
+
+const STATUS_MAP: Record<number, { label: string; color: string; bgColor: string }> = {
+    501: { label: 'Placed', color: '#636366', bgColor: '#F2F2F7' },
+    502: { label: 'Paid', color: '#007AFF', bgColor: '#E3F2FD' },
+    503: { label: 'Shipped', color: '#FF9500', bgColor: '#FFF3E0' },
+    504: { label: 'Delivered', color: '#34C759', bgColor: '#E8F5E9' },
+    505: { label: 'Cancelled', color: '#FF3B30', bgColor: '#FFEBEE' },
+};
 
 export function OrdersScreen() {
     const navigation = useNavigation();
@@ -33,29 +44,35 @@ export function OrdersScreen() {
 
         try {
             // 1. Get all order streams for this user (where they are participants)
+            // Join with actors to get the creator's details
             const streams = await db.all(`
-                SELECT s.id, s.createdat 
+                SELECT s.id, s.createdat, a.name as creatorName, a.globalcode as creatorEmail
                 FROM streams s
                 JOIN streamcollab sc ON s.id = sc.streamid
+                LEFT JOIN actors a ON s.createdby = a.id
                 WHERE s.scope = 'order' AND sc.actorid = ?
                 ORDER BY s.createdat DESC
             `, [user.id]) as any[];
 
             const orderData: OrderStream[] = [];
 
-            // 2. For each stream, summarize the items
+            // 2. For each stream, summarize the items and get latest status
             for (const stream of streams) {
                 const events = await db.all(`
-                    SELECT COUNT(*) as itemCount, SUM(delta) as totalQty 
-                    FROM orevents 
-                    WHERE streamid = ? AND opcode = 501
-                `, [stream.id]) as any[];
+                    SELECT 
+                        (SELECT COUNT(*) FROM orevents WHERE streamid = ? AND opcode = 501) as itemCount,
+                        (SELECT SUM(delta) FROM orevents WHERE streamid = ? AND opcode = 501) as totalQty,
+                        (SELECT opcode FROM orevents WHERE streamid = ? AND opcode BETWEEN 501 AND 505 ORDER BY ts DESC LIMIT 1) as statusOpcode
+                `, [stream.id, stream.id, stream.id]) as any[];
 
                 orderData.push({
                     id: stream.id,
                     createdat: stream.createdat,
                     itemCount: events[0]?.itemCount || 0,
-                    totalQty: events[0]?.totalQty || 0
+                    totalQty: events[0]?.totalQty || 0,
+                    statusOpcode: events[0]?.statusOpcode || 501,
+                    creatorName: stream.creatorName || 'Unknown',
+                    creatorEmail: stream.creatorEmail || ''
                 });
             }
 
@@ -81,18 +98,21 @@ export function OrdersScreen() {
             year: 'numeric'
         });
 
+        const status = STATUS_MAP[item.statusOpcode] || STATUS_MAP[501];
+
         return (
             <TouchableOpacity
                 style={styles.orderCard}
                 onPress={() => (navigation as any).navigate('OrderDetails', { streamId: item.id })}
             >
                 <View style={styles.orderHeader}>
-                    <View>
+                    <View style={{ flex: 1, marginRight: 8 }}>
                         <Text style={styles.orderId}>Order #{orderNum}</Text>
                         <Text style={styles.orderDate}>{date}</Text>
+                        <Text style={styles.orderedBy}>By: {item.creatorName}</Text>
                     </View>
-                    <View style={styles.statusBadge}>
-                        <Text style={styles.statusText}>Placed</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: status.bgColor }]}>
+                        <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
                     </View>
                 </View>
 
@@ -204,9 +224,14 @@ const styles = StyleSheet.create({
     orderDate: {
         fontSize: 13,
         color: Colors.textSecondary,
+        marginBottom: 2,
+    },
+    orderedBy: {
+        fontSize: 12,
+        fontWeight: '500',
+        color: Colors.textSecondary,
     },
     statusBadge: {
-        backgroundColor: '#E8F5E9',
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 8,
@@ -214,7 +239,6 @@ const styles = StyleSheet.create({
     statusText: {
         fontSize: 12,
         fontWeight: '600',
-        color: Colors.success,
     },
     separator: {
         height: 1,

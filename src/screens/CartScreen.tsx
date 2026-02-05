@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Image, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { SecureImage } from '../components/SecureImage';
@@ -34,7 +34,6 @@ export function CartScreen() {
     const navigation = useNavigation<any>();
     const [cartItems, setCartItems] = useState<CartEvent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isCheckingOut, setIsCheckingOut] = useState(false);
 
 
     const loadCart = useCallback(async () => {
@@ -71,58 +70,9 @@ export function CartScreen() {
         }
     };
 
-    const handleCheckout = async () => {
-        if (!db || !user || cartItems.length === 0) return;
-        setIsCheckingOut(true);
-
-        try {
-            const orderId = `order_${generateShortId()}`;
-            const timestamp = new Date().toISOString();
-
-            // 1. Create the persistent Order Stream
-            await db.run(`
-                INSERT INTO streams (id, scope, createdby, createdat)
-                VALUES (?, ?, ?, ?)
-            `, [orderId, 'order', user.id, timestamp]);
-
-            // 2. Add user as participant (streamcollab)
-            await db.run(`
-                INSERT INTO streamcollab (streamid, actorid, role, joinedat)
-                VALUES (?, ?, ?, ?)
-            `, [orderId, user.id, 'owner', timestamp]);
-
-            // 3. Move each cart item as an Atomic Event (Opcode 501)
-            for (const item of cartItems) {
-                const eventId = generateShortId();
-                await db.run(`
-                    INSERT INTO orevents (id, streamid, opcode, refid, delta, payload, scope, ts)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                `, [
-                    eventId,
-                    orderId,
-                    501, // Order Item Placed
-                    user.id, // Actor
-                    item.delta, // Quantity
-                    item.payload, // Item details
-                    'order',
-                    timestamp
-                ]);
-            }
-
-            // 4. Clear the user's cart stream (Opcode 401 events)
-            await db.run('DELETE FROM orevents WHERE opcode = ? AND refid = ?', [401, user.id]);
-
-            Alert.alert('Success', 'Order placed successfully!', [
-                { text: 'OK', onPress: () => navigation.navigate('Orders') }
-            ]);
-
-            setCartItems([]);
-        } catch (error) {
-            console.error('Checkout error:', error);
-            Alert.alert('Error', 'Failed to process checkout');
-        } finally {
-            setIsCheckingOut(false);
-        }
+    const handleCheckout = () => {
+        if (cartItems.length === 0) return;
+        navigation.navigate('CheckoutAddress', { cartItems });
     };
 
 
@@ -203,15 +153,10 @@ export function CartScreen() {
                         </Text>
                     </View>
                     <TouchableOpacity
-                        style={[styles.checkoutButton, isCheckingOut && styles.disabledButton]}
+                        style={styles.checkoutButton}
                         onPress={handleCheckout}
-                        disabled={isCheckingOut}
                     >
-                        {isCheckingOut ? (
-                            <ActivityIndicator color="#FFF" />
-                        ) : (
-                            <Text style={styles.checkoutText}>Order Now</Text>
-                        )}
+                        <Text style={styles.checkoutText}>Order Now</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -219,6 +164,7 @@ export function CartScreen() {
         </SafeAreaView>
     );
 }
+
 
 const styles = StyleSheet.create({
     container: {
@@ -369,6 +315,102 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 18,
         fontWeight: '700',
+    },
+    addressSection: {
+        marginTop: 32,
+        paddingBottom: 24,
+    },
+    sectionTitle: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: Colors.textSecondary,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: 16,
+    },
+    addressList: {
+        gap: 12,
+    },
+    addressItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.surface,
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    selectedAddress: {
+        borderColor: Colors.primary,
+        backgroundColor: '#FFF',
+    },
+    addressContent: {
+        flex: 1,
+        marginLeft: 12,
+    },
+    addressText: {
+        fontSize: 15,
+        color: Colors.text,
+        lineHeight: 20,
+    },
+    defaultLabel: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: Colors.primary,
+        marginTop: 4,
+        textTransform: 'uppercase',
+    },
+    addNewButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+    },
+    addNewText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: Colors.primary,
+        marginLeft: 8,
+    },
+    newAddressContainer: {
+        gap: 16,
+    },
+    inputWrapper: {
+        flexDirection: 'row',
+        backgroundColor: Colors.surface,
+        borderRadius: 16,
+        padding: 12,
+        alignItems: 'flex-start',
+    },
+    inputIcon: {
+        marginTop: 8,
+    },
+    addressInput: {
+        flex: 1,
+        marginLeft: 12,
+        fontSize: 16,
+        color: Colors.text,
+        minHeight: 80,
+        textAlignVertical: 'top',
+        padding: 0,
+    },
+    defaultCheckbox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingLeft: 4,
+    },
+    checkboxLabel: {
+        fontSize: 14,
+        color: Colors.text,
+        marginLeft: 10,
+    },
+    cancelNewButton: {
+        padding: 12,
+        alignItems: 'center',
+    },
+    cancelNewText: {
+        fontSize: 14,
+        color: Colors.textSecondary,
+        fontWeight: '500',
     },
 });
 

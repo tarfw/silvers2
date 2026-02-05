@@ -14,6 +14,7 @@ import { ReportsScreen } from '../screens/ReportsScreen';
 import { InventoryScreen } from '../screens/InventoryScreen';
 import { OrderDetailsScreen } from '../screens/OrderDetailsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { CheckoutAddressScreen } from '../screens/CheckoutAddressScreen';
 
 
 import { Ionicons } from '@expo/vector-icons';
@@ -130,6 +131,7 @@ export function AppNavigator() {
             <Stack.Screen name="Inventory" component={InventoryScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
+            <Stack.Screen name="CheckoutAddress" component={CheckoutAddressScreen} />
             <Stack.Screen
                 name="Profile"
                 component={ProfileScreen}

@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const currentSessionUserRef = React.useRef<string | null>(null);
 
   useEffect(() => {
-    const initTenantDb = async (userId: string) => {
+    const initTenantDb = async (userId: string, email: string, name: string) => {
       // Prevent parallel initializations for the same user
       if (isInitializingRef.current) {
         console.log(`[${new Date().toLocaleTimeString('en-GB')}] ⏳ Auth init already in progress, skipping duplicate call...`);
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🏦 Initializing database for user: ${userId}`);
 
-        const initializedDb = await databaseManager.initialize(userId);
+        const initializedDb = await databaseManager.initialize(userId, email, name);
         setDb(initializedDb);
 
         /* Initial sync moved to useTasks hook to ensure proper UI coordination */
@@ -63,7 +63,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: session.user.email!,
             created_at: session.user.created_at,
           });
-          await initTenantDb(session.user.id);
+          const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Self';
+          await initTenantDb(session.user.id, session.user.email!, name);
         }
       } catch (err) {
         console.error('Session check failed:', err);
@@ -82,7 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: session.user.email!,
           created_at: session.user.created_at,
         });
-        await initTenantDb(session.user.id);
+        const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Self';
+        await initTenantDb(session.user.id, session.user.email!, name);
       } else if (event === 'SIGNED_OUT') {
         currentSessionUserRef.current = null;
         if (syncTimeoutRef.current) {

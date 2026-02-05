@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, Alert, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
@@ -37,6 +37,9 @@ export function OrderDetailsScreen() {
     const [events, setEvents] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [currentStatus, setCurrentStatus] = useState(501);
+    const [creatorDetails, setCreatorDetails] = useState<{ name: string; email: string } | null>(null);
+    const [shippingAddress, setShippingAddress] = useState<string | null>(null);
+    const [showSuccessBar, setShowSuccessBar] = useState(route.params?.justPlaced || false);
 
     const loadOrderDetails = useCallback(async () => {
         if (!db || !user) return;
@@ -56,6 +59,23 @@ export function OrderDetailsScreen() {
             // 3. Determine latest status
             const latestStatus = allEvents.find(e => e.opcode >= 501 && e.opcode <= 505);
 
+            // 4. Fetch creator details
+            const streamInfo = await db.all(
+                'SELECT a.name, a.globalcode as email FROM streams s LEFT JOIN actors a ON s.createdby = a.id WHERE s.id = ?',
+                [streamId]
+            ) as any[];
+
+            if (streamInfo?.[0]) {
+                setCreatorDetails(streamInfo[0]);
+            }
+
+            // 5. Fetch shipping address (Opcode 506)
+            const addressEvent = allEvents.find(e => e.opcode === 506);
+            if (addressEvent) {
+                const payload = JSON.parse(addressEvent.payload);
+                setShippingAddress(payload.address);
+            }
+
             setItems(orderItems);
             setEvents(allEvents);
             setCurrentStatus(latestStatus?.opcode || 501);
@@ -69,7 +89,20 @@ export function OrderDetailsScreen() {
     useFocusEffect(
         useCallback(() => {
             loadOrderDetails();
-        }, [loadOrderDetails])
+
+            // Handle native back button
+            const onBackPress = () => {
+                if (route.params?.justPlaced) {
+                    (navigation as any).navigate('MainTabs');
+                    return true; // Prevent default behavior
+                }
+                return false; // Default behavior
+            };
+
+            BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+            return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+        }, [loadOrderDetails, route.params?.justPlaced, navigation])
     );
 
     const updateStatus = async (opcode: number) => {
@@ -133,11 +166,32 @@ export function OrderDetailsScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                <TouchableOpacity
+                    onPress={() => {
+                        if (route.params?.justPlaced) {
+                            (navigation as any).navigate('MainTabs');
+                        } else {
+                            navigation.goBack();
+                        }
+                    }}
+                    style={styles.backButton}
+                >
                     <Ionicons name="arrow-back" size={24} color={Colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.title}>Order #{orderNum}</Text>
             </View>
+
+            {showSuccessBar && (
+                <View style={styles.successBar}>
+                    <View style={styles.successBarContent}>
+                        <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                        <Text style={styles.successBarText}>Order placed successfully!</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => setShowSuccessBar(false)}>
+                        <Ionicons name="close" size={20} color="#FFF" />
+                    </TouchableOpacity>
+                </View>
+            )}
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {/* Status Section */}
@@ -150,6 +204,33 @@ export function OrderDetailsScreen() {
                         </Text>
                     </View>
                 </View>
+
+                {/* Customer Section */}
+                {creatorDetails && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Customer Details</Text>
+                        <View style={styles.customerCard}>
+                            <View style={styles.customerAvatar}>
+                                <Text style={styles.avatarText}>{creatorDetails.name.charAt(0)}</Text>
+                            </View>
+                            <View style={styles.customerInfo}>
+                                <Text style={styles.customerName}>{creatorDetails.name}</Text>
+                                <Text style={styles.customerEmail}>{creatorDetails.email}</Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
+                {/* Shipping Section */}
+                {shippingAddress && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Shipping Address</Text>
+                        <View style={styles.shippingCard}>
+                            <Ionicons name="location-sharp" size={20} color={Colors.textSecondary} />
+                            <Text style={styles.shippingText}>{shippingAddress}</Text>
+                        </View>
+                    </View>
+                )}
 
                 {/* Items Section */}
                 <View style={styles.section}>
@@ -253,6 +334,53 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         marginLeft: 12,
     },
+    customerCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.surface,
+        borderRadius: 20,
+        padding: 16,
+    },
+    customerAvatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: Colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    avatarText: {
+        color: '#FFF',
+        fontSize: 18,
+        fontWeight: '600',
+    },
+    customerInfo: {
+        marginLeft: 16,
+    },
+    customerName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: Colors.text,
+    },
+    customerEmail: {
+        fontSize: 13,
+        color: Colors.textSecondary,
+        marginTop: 2,
+    },
+    shippingCard: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        backgroundColor: Colors.surface,
+        borderRadius: 20,
+        padding: 16,
+    },
+    shippingText: {
+        flex: 1,
+        marginLeft: 12,
+        fontSize: 15,
+        color: Colors.text,
+        lineHeight: 22,
+    },
     itemsCard: {
         backgroundColor: Colors.surface,
         borderRadius: 20,
@@ -332,5 +460,26 @@ const styles = StyleSheet.create({
     },
     activeActionText: {
         color: '#FFF',
+    },
+    successBar: {
+        backgroundColor: Colors.success,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        marginHorizontal: 20,
+        borderRadius: 12,
+        marginBottom: 8,
+    },
+    successBarContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    successBarText: {
+        color: '#FFF',
+        fontSize: 15,
+        fontWeight: '600',
+        marginLeft: 8,
     },
 });

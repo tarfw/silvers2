@@ -13,7 +13,7 @@ class DatabaseManager {
   private isInitializing: boolean = false;
   private isInitialized: boolean = false;
 
-  async initialize(userId: string, url: string = TURSO_URL, token: string = TURSO_TOKEN): Promise<Database> {
+  async initialize(userId: string, email: string, name: string = 'Self', url: string = TURSO_URL, token: string = TURSO_TOKEN): Promise<Database> {
     // Prevent parallel initializations
     if (this.isInitializing) {
       console.log(`[${new Date().toLocaleTimeString('en-GB')}] ⏳ Initialization already in progress, skipping...`);
@@ -27,44 +27,41 @@ class DatabaseManager {
       });
     }
 
-    // Don't re-initialize if already connected AND schema is ready
-    if (this.db && this.userId === userId && this.isInitialized) {
-      console.log(`[${new Date().toLocaleTimeString('en-GB')}] ♻️ Database already initialized.`);
-      return this.db;
-    }
-
     this.isInitializing = true;
     this.userId = userId;
-    this.isInitialized = false;
 
     // Use a fixed local database name - v4 to ensure clean start after schema changes
     const localDbName = `silvers_v4.db`;
     const dbPath = getDbPath(localDbName);
 
     try {
-      console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🔗 Turso DB connection initiated (v4)`);
-      this.db = new Database({
-        path: dbPath,
-        url: url,
-        authToken: token,
-      });
+      if (!this.db || !this.isInitialized) {
+        console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🔗 Turso DB connection initiated (v4)`);
+        this.db = new Database({
+          path: dbPath,
+          url: url,
+          authToken: token,
+        });
 
-      console.log(`[${new Date().toLocaleTimeString('en-GB')}] 📡 Connecting to Turso...`);
-      await this.db.connect();
-      console.log(`[${new Date().toLocaleTimeString('en-GB')}] ✅ Connected to Turso`);
+        console.log(`[${new Date().toLocaleTimeString('en-GB')}] 📡 Connecting to Turso...`);
+        await this.db.connect();
+        console.log(`[${new Date().toLocaleTimeString('en-GB')}] ✅ Connected to Turso`);
 
-      console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🛠️ Initializing schema...`);
-      await this.initializeSchema();
-      this.isInitialized = true;
-      console.log(`[${new Date().toLocaleTimeString('en-GB')}] ✅ Schema initialized`);
+        console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🛠️ Initializing schema...`);
+        await this.initializeSchema();
+        this.isInitialized = true;
+        console.log(`[${new Date().toLocaleTimeString('en-GB')}] ✅ Schema initialized`);
+      }
 
-      // Ensure self-actor exists for this user to participate in streams
+      // Ensure self-actor exists and is up to date
       console.log(`[${new Date().toLocaleTimeString('en-GB')}] 👤 Ensuring self-actor exists...`);
       await this.db.run(`
         INSERT INTO actors (id, actortype, globalcode, name)
-        SELECT ?, ?, ?, ?
-        WHERE NOT EXISTS (SELECT 1 FROM actors WHERE id = ?)
-      `, [userId, 'user', userId, 'Self', userId]);
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          globalcode = excluded.globalcode,
+          name = excluded.name
+      `, [userId, 'user', email, name]);
 
       // Add a small delay to let schema changes "settle" before sync starts
       await new Promise(resolve => setTimeout(resolve, 1000));
