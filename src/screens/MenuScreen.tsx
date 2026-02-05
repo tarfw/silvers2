@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNodes } from '../hooks/useNodes';
 
 const Colors = {
     background: '#FFFFFF',
@@ -10,6 +11,28 @@ const Colors = {
     separator: '#F2F2F7',
     surface: '#F9F9FB',
 };
+
+// Sync Button Component
+function SyncButton({
+    title,
+    onPress,
+    isLoading,
+}: {
+    title: string;
+    onPress: () => void;
+    isLoading: boolean;
+}) {
+    return (
+        <TouchableOpacity
+            style={styles.syncButton}
+            onPress={onPress}
+            disabled={isLoading}
+            activeOpacity={0.6}
+        >
+            <Text style={[styles.syncButtonText, isLoading && { opacity: 0.3 }]}>{title}</Text>
+        </TouchableOpacity>
+    );
+}
 
 const MENU_GROUPS = [
     {
@@ -38,15 +61,44 @@ const MENU_GROUPS = [
 
 export function MenuScreen() {
     const navigation = useNavigation<any>();
+    const { isSyncing, pull, push } = useNodes();
+    const [isPulling, setIsPulling] = useState(false);
+    const [isPushing, setIsPushing] = useState(false);
 
     const handlePress = (screen: string) => {
-        if (screen === 'Nodes' || screen === 'Orders' || screen === 'Reports' || screen === 'Inventory') {
+        if (screen === 'Nodes' || screen === 'Orders' || screen === 'Reports' || screen === 'Inventory' || screen === 'Profile') {
             navigation.navigate(screen);
-        } else if (screen === 'Profile' || screen === 'Collections') {
+        } else if (screen === 'Collections') {
             // These are in MainTabs, use nested navigation
             navigation.navigate('MainTabs', { screen });
         } else {
             console.log('Navigate to:', screen);
+        }
+    };
+
+    const handlePull = async () => {
+        setIsPulling(true);
+        try {
+            await pull();
+        } catch (e) {
+            Alert.alert('Pull Failed', 'Could not fetch updates from cloud.');
+        } finally {
+            setTimeout(() => setIsPulling(false), 500);
+        }
+    };
+
+    const handlePush = async () => {
+        setIsPushing(true);
+        try {
+            await push();
+        } catch (e: any) {
+            if (e.message?.includes('FOREIGN KEY')) {
+                Alert.alert('Push Failed', 'A dependency issue occurred. Try Pulling first.');
+            } else {
+                Alert.alert('Push Failed', 'Could not upload updates to cloud.');
+            }
+        } finally {
+            setTimeout(() => setIsPushing(false), 500);
         }
     };
 
@@ -85,6 +137,17 @@ export function MenuScreen() {
                     </View>
                 ))}
             </ScrollView>
+
+            {/* Bottom Sync Bar */}
+            <View style={styles.syncBar}>
+                <View style={styles.syncButtons}>
+                    <SyncButton title="Pull" onPress={handlePull} isLoading={isPulling} />
+                    <SyncButton title="Push" onPress={handlePush} isLoading={isPushing} />
+                </View>
+                <Text style={styles.syncStatus}>
+                    {isPulling || isPushing || isSyncing ? 'syncing' : 'synced'}
+                </Text>
+            </View>
         </SafeAreaView>
     );
 }
@@ -160,6 +223,41 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '500',
         color: Colors.text,
+    },
+    syncBar: {
+        position: 'absolute',
+        bottom: 120, // Adjust to sit above tab bar
+        left: 20,
+        right: 20,
+        height: 54,
+        backgroundColor: Colors.surface,
+        borderRadius: 16,
+        paddingHorizontal: 20,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 5,
+    },
+    syncButtons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    syncButton: {
+        marginRight: 24,
+    },
+    syncButtonText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: Colors.text,
+    },
+    syncStatus: {
+        fontSize: 12,
+        color: Colors.textSecondary,
+        fontWeight: '400',
     },
 });
 

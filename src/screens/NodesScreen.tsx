@@ -32,27 +32,6 @@ const Colors = {
     danger: '#FF3B30',
 };
 
-// Sync Button Component
-function SyncButton({
-    title,
-    onPress,
-    isLoading,
-}: {
-    title: string;
-    onPress: () => void;
-    isLoading: boolean;
-}) {
-    return (
-        <TouchableOpacity
-            style={styles.syncButton}
-            onPress={onPress}
-            disabled={isLoading}
-            activeOpacity={0.6}
-        >
-            <Text style={[styles.syncButtonText, isLoading && { opacity: 0.3 }]}>{title}</Text>
-        </TouchableOpacity>
-    );
-}
 
 function NodeItem({
     node,
@@ -114,8 +93,6 @@ export function NodesScreen() {
     const [nodeToDelete, setNodeToDelete] = useState<Node | null>(null);
 
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [isPulling, setIsPulling] = useState(false);
-    const [isPushing, setIsPushing] = useState(false);
 
     // Parent Selection State
     const [isParentPickerVisible, setParentPickerVisible] = useState(false);
@@ -247,31 +224,6 @@ export function NodesScreen() {
         }
     };
 
-    const handlePull = async () => {
-        setIsPulling(true);
-        try {
-            await pull();
-        } catch (e) {
-            Alert.alert('Pull Failed', 'Could not fetch updates from cloud.');
-        } finally {
-            setTimeout(() => setIsPulling(false), 500);
-        }
-    };
-
-    const handlePush = async () => {
-        setIsPushing(true);
-        try {
-            await push();
-        } catch (e: any) {
-            if (e.message?.includes('FOREIGN KEY')) {
-                Alert.alert('Push Failed', 'A node depends on a parent that does not exist in the cloud yet. Try Pulling first.');
-            } else {
-                Alert.alert('Push Failed', 'Could not upload updates to cloud.');
-            }
-        } finally {
-            setTimeout(() => setIsPushing(false), 500);
-        }
-    };
 
     const handleDelete = (node: Node) => {
         setNodeToDelete(node);
@@ -410,16 +362,6 @@ export function NodesScreen() {
                 <Text style={styles.fabText}>+</Text>
             </TouchableOpacity>
 
-            {/* Bottom Sync Bar */}
-            <View style={styles.syncBar}>
-                <View style={styles.syncButtons}>
-                    <SyncButton title="Pull" onPress={handlePull} isLoading={isPulling} />
-                    <SyncButton title="Push" onPress={handlePush} isLoading={isPushing} />
-                </View>
-                <Text style={styles.syncStatus}>
-                    {isPulling || isPushing || isSyncing ? 'syncing' : 'synced'}
-                </Text>
-            </View>
 
             {/* Type Selection Bottom Drawer */}
             <Modal
@@ -871,10 +813,9 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.background,
     },
     header: {
-        paddingTop: Platform.OS === 'ios' ? 60 : 40,
         paddingHorizontal: 24,
         backgroundColor: Colors.surface,
-        paddingBottom: 16,
+        paddingBottom: 12,
     },
     headerTop: {
         flexDirection: 'row',
@@ -901,7 +842,7 @@ const styles = StyleSheet.create({
         fontWeight: '400',
     },
     mainSearchContainer: {
-        marginTop: 16,
+        marginTop: 0,
     },
     mainSearchInput: {
         backgroundColor: '#F2F2F7',
@@ -999,23 +940,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-    },
-    syncButtons: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    syncButton: {
-        marginRight: 24,
-    },
-    syncButtonText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: Colors.text,
-    },
-    syncStatus: {
-        fontSize: 12,
-        color: Colors.textSecondary,
-        fontWeight: '400',
     },
     emptyContainer: {
         alignItems: 'center',

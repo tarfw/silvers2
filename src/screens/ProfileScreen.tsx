@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 
 const Colors = {
     background: '#FFFFFF',
@@ -8,6 +9,7 @@ const Colors = {
     textSecondary: '#636366',
     danger: '#FF3B30',
     separator: '#F2F2F7',
+    surface: '#F9F9FB',
 };
 
 export function ProfileScreen() {
@@ -16,28 +18,31 @@ export function ProfileScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>Profile</Text>
+                <Text style={styles.title}>Account</Text>
             </View>
 
-            <View style={styles.content}>
-                <View style={styles.profileCard}>
-                    <View style={styles.avatarPlaceholder}>
-                        <Text style={styles.avatarText}>
-                            {user?.email?.charAt(0).toUpperCase() || 'U'}
-                        </Text>
+            <ScrollView style={styles.content}>
+                <View style={styles.infoSection}>
+                    <Text style={styles.sectionLabel}>User Details</Text>
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Email</Text>
+                        <Text style={styles.infoValue}>{user?.email}</Text>
                     </View>
-                    <View style={styles.userInfo}>
-                        <Text style={styles.emailLabel}>Logged in as</Text>
-                        <Text style={styles.emailText}>{user?.email}</Text>
+                    <View style={styles.separator} />
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Role</Text>
+                        <Text style={styles.infoValue}>Administrator</Text>
                     </View>
                 </View>
 
-                <View style={styles.section}>
-                    <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
+                <View style={styles.infoSection}>
+                    <Text style={styles.sectionLabel}>Actions</Text>
+                    <TouchableOpacity style={styles.actionRow} onPress={signOut}>
                         <Text style={styles.signOutText}>Sign Out</Text>
+                        <Ionicons name="log-out-outline" size={20} color={Colors.danger} />
                     </TouchableOpacity>
                 </View>
-            </View>
+            </ScrollView>
         </SafeAreaView>
     );
 }
@@ -49,10 +54,8 @@ const styles = StyleSheet.create({
     },
     header: {
         paddingHorizontal: 20,
-        paddingTop: 16,
+        paddingTop: 8,
         paddingBottom: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.separator,
     },
     title: {
         fontSize: 32,
@@ -62,54 +65,50 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        padding: 20,
-        paddingBottom: 100, // Safe area for tab bar
     },
-    profileCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 20,
-        backgroundColor: '#F9F9FB',
-        borderRadius: 16,
+    infoSection: {
+        marginTop: 12,
         marginBottom: 32,
+        paddingHorizontal: 20,
     },
-    avatarPlaceholder: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#000',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
-    },
-    avatarText: {
-        color: '#FFF',
-        fontSize: 24,
+    sectionLabel: {
+        fontSize: 13,
         fontWeight: '600',
-    },
-    userInfo: {
-        flex: 1,
-    },
-    emailLabel: {
-        fontSize: 14,
         color: Colors.textSecondary,
-        marginBottom: 2,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: 16,
+        marginLeft: 4,
     },
-    emailText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: Colors.text,
-    },
-    section: {
-        marginTop: 'auto',
-    },
-    signOutButton: {
-        backgroundColor: '#FFF',
-        borderWidth: 1,
-        borderColor: Colors.danger,
-        paddingVertical: 16,
-        borderRadius: 12,
+    infoRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 4,
+    },
+    infoLabel: {
+        fontSize: 16,
+        color: Colors.text,
+        fontWeight: '500',
+    },
+    infoValue: {
+        fontSize: 16,
+        color: Colors.textSecondary,
+    },
+    separator: {
+        height: 1,
+        backgroundColor: Colors.separator,
+        marginVertical: 4,
+    },
+    actionRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 16,
+        paddingHorizontal: 16,
+        backgroundColor: Colors.surface,
+        borderRadius: 12,
     },
     signOutText: {
         color: Colors.danger,

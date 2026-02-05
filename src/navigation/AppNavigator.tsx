@@ -12,6 +12,7 @@ import { ProductDetailsScreen } from '../screens/ProductDetailsScreen';
 import { OrdersScreen } from '../screens/OrdersScreen';
 import { ReportsScreen } from '../screens/ReportsScreen';
 import { InventoryScreen } from '../screens/InventoryScreen';
+import { OrderDetailsScreen } from '../screens/OrderDetailsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 
 
@@ -86,15 +87,6 @@ function TabNavigator() {
                 }}
             />
             <Tab.Screen
-                name="Profile"
-                component={ProfileScreen}
-                options={{
-                    tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "person" : "person-outline"} size={26} color={color} />
-                    )
-                }}
-            />
-            <Tab.Screen
                 name="Menu"
                 component={MenuScreen}
                 options={{
@@ -121,7 +113,9 @@ export function AppNavigator() {
                 options={{
                     headerShown: true,
                     headerTitle: 'All Items',
-                    headerBackTitle: 'Menu'
+                    headerBackTitle: 'Back',
+                    headerShadowVisible: false,
+                    headerStyle: { backgroundColor: '#FFFFFF' },
                 }}
             />
             <Stack.Screen
@@ -135,6 +129,18 @@ export function AppNavigator() {
             <Stack.Screen name="Reports" component={ReportsScreen} />
             <Stack.Screen name="Inventory" component={InventoryScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
+            <Stack.Screen
+                name="Profile"
+                component={ProfileScreen}
+                options={{
+                    headerShown: true,
+                    headerTitle: 'Profile',
+                    headerBackTitle: 'Back',
+                    headerShadowVisible: false,
+                    headerStyle: { backgroundColor: '#FFFFFF' },
+                }}
+            />
 
         </Stack.Navigator>
     );

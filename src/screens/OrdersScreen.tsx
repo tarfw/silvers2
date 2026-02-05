@@ -82,7 +82,10 @@ export function OrdersScreen() {
         });
 
         return (
-            <TouchableOpacity style={styles.orderCard}>
+            <TouchableOpacity
+                style={styles.orderCard}
+                onPress={() => (navigation as any).navigate('OrderDetails', { streamId: item.id })}
+            >
                 <View style={styles.orderHeader}>
                     <View>
                         <Text style={styles.orderId}>Order #{orderNum}</Text>
