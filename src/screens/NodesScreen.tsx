@@ -60,12 +60,18 @@ function NodeItem({
     onEdit
 }: {
     node: Node;
-    onDelete: (id: string) => void;
+    onDelete: (node: Node) => void;
     onEdit: (node: Node) => void;
 }) {
     return (
-        <TouchableOpacity style={styles.nodeItem} onPress={() => onEdit(node)} activeOpacity={0.6}>
-            {node.nodetype === 'product' && (
+        <TouchableOpacity
+            style={styles.nodeItem}
+            onPress={() => onEdit(node)}
+            onLongPress={() => onDelete(node)}
+            activeOpacity={0.6}
+            delayLongPress={500}
+        >
+            {(node.nodetype === 'product' || node.nodetype === 'category' || node.nodetype === 'collection') && (
                 <SecureImage
                     source={{ uri: node.payload && typeof node.payload === 'object' ? (node.payload as any).image : '' }}
                     style={styles.nodeImage}
@@ -78,22 +84,13 @@ function NodeItem({
                     {node.nodetype} {node.universalcode ? `• ${node.universalcode}` : ''}
                 </Text>
             </View>
-            <TouchableOpacity
-                onPress={(e) => {
-                    e.stopPropagation();
-                    onDelete(node.id);
-                }}
-                style={styles.deleteButton}
-            >
-                <Text style={styles.deleteButtonText}>Remove</Text>
-            </TouchableOpacity>
         </TouchableOpacity >
     );
 }
 
 export function NodesScreen() {
     const { nodes, isLoading, isSyncing, createNode, updateNode, deleteNode, pull, push, sync } = useNodes();
-    const { signOut, user } = useAuth();
+    const { } = useAuth();
 
     // State for Add/Edit
     const [isModalVisible, setModalVisible] = useState(false);
@@ -109,6 +106,12 @@ export function NodesScreen() {
     const [formDescription, setFormDescription] = useState('');
     const [formImageUrl, setFormImageUrl] = useState('');
     const [formSelectedOptions, setFormSelectedOptions] = useState<string[]>([]);
+
+    const [filterType, setFilterType] = useState<string>('all');
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const [isDeleteDrawerVisible, setIsDeleteDrawerVisible] = useState(false);
+    const [nodeToDelete, setNodeToDelete] = useState<Node | null>(null);
 
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isPulling, setIsPulling] = useState(false);
@@ -270,19 +273,21 @@ export function NodesScreen() {
         }
     };
 
-    const handleDelete = (id: string) => {
-        Alert.alert(
-            'Delete Node',
-            'Are you sure you want to delete this node?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: () => deleteNode(id)
-                },
-            ]
-        );
+    const handleDelete = (node: Node) => {
+        setNodeToDelete(node);
+        setIsDeleteDrawerVisible(true);
+    };
+
+    const confirmDelete = async () => {
+        if (nodeToDelete) {
+            try {
+                await deleteNode(nodeToDelete.id);
+                setIsDeleteDrawerVisible(false);
+                setNodeToDelete(null);
+            } catch (error: any) {
+                Alert.alert('Error', `Failed to delete node: ${error.message}`);
+            }
+        }
     };
 
     const toggleOption = (id: string) => {
@@ -320,20 +325,66 @@ export function NodesScreen() {
 
     const selectedParentName = nodes.find(n => n.id === formParentId)?.title || formParentId || 'None';
 
+    const filteredNodes = nodes.filter(node => {
+        const matchesType = filterType === 'all' ? true : node.nodetype === filterType;
+        const matchesSearch = !searchQuery.trim() ||
+            node.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (node.universalcode || '').toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesType && matchesSearch;
+    });
+
+    const filterOptions = [
+        { label: 'All', value: 'all' },
+        { label: 'Products', value: 'product' },
+        { label: 'Collections', value: 'collection' },
+        { label: 'Categories', value: 'category' },
+        { label: 'Groups', value: 'optionset' },
+        { label: 'Options', value: 'option' },
+    ];
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <View style={styles.headerTop}>
-                    <Text style={styles.headerTitle}>Nodes</Text>
-                    <TouchableOpacity onPress={signOut} style={styles.signOutButton}>
-                        <Text style={styles.signOutText}>Sign Out</Text>
-                    </TouchableOpacity>
+                <View style={styles.mainSearchContainer}>
+                    <TextInput
+                        style={styles.mainSearchInput}
+                        placeholder="Search..."
+                        placeholderTextColor={Colors.textSecondary}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        clearButtonMode="while-editing"
+                        autoCapitalize="none"
+                    />
                 </View>
-                <Text style={styles.userEmail}>{user?.email}</Text>
+
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.filterScroll}
+                    style={styles.filterContainer}
+                >
+                    {filterOptions.map((opt) => (
+                        <TouchableOpacity
+                            key={opt.value}
+                            style={[
+                                styles.filterChip,
+                                filterType === opt.value && styles.filterChipActive
+                            ]}
+                            onPress={() => setFilterType(opt.value)}
+                        >
+                            <Text style={[
+                                styles.filterChipText,
+                                filterType === opt.value && styles.filterChipTextActive
+                            ]}>
+                                {opt.label}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
             </View>
 
             <FlatList
-                data={nodes}
+                data={filteredNodes}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                     <NodeItem
@@ -578,20 +629,8 @@ export function NodesScreen() {
                 >
                     <View style={styles.drawerContent}>
                         <View style={styles.drawerHandle} />
-                        <Text style={styles.drawerTitle}>Image Options</Text>
 
                         <View style={styles.drawerContentPadding}>
-                            <Text style={[styles.label, { marginBottom: 8 }]}>Image URL</Text>
-                            <TextInput
-                                style={[styles.modalInput, { marginBottom: 16 }]}
-                                placeholder="https://example.com/image.jpg"
-                                placeholderTextColor={Colors.textSecondary}
-                                value={formImageUrl}
-                                onChangeText={setFormImageUrl}
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                            />
-
                             <TouchableOpacity
                                 style={[styles.uploadButton, { marginBottom: 12 }]}
                                 onPress={async () => {
@@ -631,6 +670,42 @@ export function NodesScreen() {
                                 </TouchableOpacity>
                             ) : null}
                         </View>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
+            {/* Deletion Confirmation Drawer */}
+            <Modal
+                visible={isDeleteDrawerVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setIsDeleteDrawerVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.drawerOverlay}
+                    activeOpacity={1}
+                    onPress={() => setIsDeleteDrawerVisible(false)}
+                >
+                    <View style={styles.drawerContent}>
+                        <View style={styles.drawerHandle} />
+                        <Text style={[styles.drawerTitle, { color: Colors.danger }]}>Confirm Delete?</Text>
+                        <Text style={[styles.nodeSubtitle, { marginBottom: 24, fontSize: 15 }]}>
+                            Are you sure you want to delete <Text style={{ fontWeight: '600', color: Colors.text }}>{nodeToDelete?.title}</Text>? This action cannot be undone.
+                        </Text>
+
+                        <TouchableOpacity
+                            style={[styles.deleteConfirmButton, { marginBottom: 12 }]}
+                            onPress={confirmDelete}
+                        >
+                            <Text style={styles.deleteConfirmButtonText}>Delete</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.drawerItem, { borderBottomWidth: 0, alignItems: 'center' }]}
+                            onPress={() => setIsDeleteDrawerVisible(false)}
+                        >
+                            <Text style={[styles.drawerItemText, { color: Colors.textSecondary }]}>Cancel</Text>
+                        </TouchableOpacity>
                     </View>
                 </TouchableOpacity>
             </Modal>
@@ -824,6 +899,41 @@ const styles = StyleSheet.create({
         color: Colors.textSecondary,
         fontSize: 14,
         fontWeight: '400',
+    },
+    mainSearchContainer: {
+        marginTop: 16,
+    },
+    mainSearchInput: {
+        backgroundColor: '#F2F2F7',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        fontSize: 16,
+        color: Colors.text,
+    },
+    filterContainer: {
+        marginTop: 12,
+    },
+    filterScroll: {
+        paddingRight: 24,
+    },
+    filterChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        backgroundColor: '#F2F2F7',
+        marginRight: 8,
+    },
+    filterChipActive: {
+        backgroundColor: Colors.primary,
+    },
+    filterChipText: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: Colors.textSecondary,
+    },
+    filterChipTextActive: {
+        color: Colors.surface,
     },
     list: {
         paddingHorizontal: 24,
@@ -1160,6 +1270,17 @@ const styles = StyleSheet.create({
         color: Colors.primary,
         fontSize: 16,
         fontWeight: '500',
+    },
+    deleteConfirmButton: {
+        backgroundColor: Colors.danger,
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    deleteConfirmButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
     },
     drawerContentPadding: {
         paddingTop: 8,
