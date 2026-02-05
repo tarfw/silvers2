@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
-
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions, Alert, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, Dimensions, Alert } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { SecureImage } from '../components/SecureImage';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,17 +7,9 @@ import { Node } from '../types';
 import { useNodes } from '../hooks/useNodes';
 import { useAuth } from '../contexts/AuthContext';
 import { generateShortId } from '../lib/utils';
+import { Button } from '../components/ui/Button';
 
 const { width } = Dimensions.get('window');
-
-const Colors = {
-    background: '#FFFFFF',
-    text: '#000000',
-    textSecondary: '#636366',
-    primary: '#000000',
-    separator: '#F2F2F7',
-    surface: '#F9F9FB',
-};
 
 export function ProductDetailsScreen() {
     const route = useRoute();
@@ -31,19 +22,16 @@ export function ProductDetailsScreen() {
     const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
     const [showSuccess, setShowSuccess] = useState(false);
 
-
     const payload = product.payload as any;
     const imageUrl = payload?.image;
     const description = payload?.description;
     const optionsGroups = payload?.options as Record<string, string[]> | undefined;
 
-    // Create a fast lookup map for node titles
     const nodeMap = useMemo(() => {
         const map = new Map<string, string>();
         nodes.forEach(node => map.set(node.id, node.title));
         return map;
     }, [nodes]);
-
 
     const handleSelectOption = (group: string, optionId: string) => {
         setSelectedOptions(prev => ({
@@ -58,7 +46,6 @@ export function ProductDetailsScreen() {
             return;
         }
 
-        // Validate all option groups have a selection
         if (optionsGroups) {
             const missingGroups = Object.keys(optionsGroups).filter(group => !selectedOptions[group]);
             if (missingGroups.length > 0) {
@@ -72,19 +59,16 @@ export function ProductDetailsScreen() {
             return acc;
         }, {} as Record<string, string>);
 
-
         try {
             const eventId = generateShortId();
-            const orderId = `cart_${user.id}`; // Stream ID for the cart
-            const opcode = 401; // Cart events
+            const orderId = `cart_${user.id}`;
+            const opcode = 401;
 
-            // Ensure the stream exists to satisfy foreign key constraint
             await db.run(`
                 INSERT INTO streams (id, scope, createdby, createdat)
                 SELECT ?, ?, ?, ?
                 WHERE NOT EXISTS (SELECT 1 FROM streams WHERE id = ?)
             `, [orderId, 'cart', user.id, new Date().toISOString(), orderId]);
-
 
             const eventPayload = JSON.stringify({
                 name: product.title,
@@ -97,81 +81,85 @@ export function ProductDetailsScreen() {
                 INSERT INTO orevents (id, streamid, opcode, refid, delta, payload, scope, ts)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `, [
-                eventId,
-                orderId,
-                opcode,
-                user.id, // refid carries user id as per request
-                quantity, // delta carries qty
-                eventPayload, // payload carries product name and options
-                'cart', // scope
-                new Date().toISOString()
+                eventId, orderId, opcode, user.id, quantity, eventPayload, 'cart', new Date().toISOString()
             ]);
 
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
-
-        } catch (error: any) {
+        } catch (error) {
             console.error('Add to cart error:', error);
             Alert.alert('Error', 'Failed to add to cart');
         }
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.text} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>{product.title}</Text>
-                <TouchableOpacity
-                    onPress={() => (navigation.navigate as any)('MainTabs', { screen: 'Cart' })}
-                    style={styles.cartButton}
-                >
-                    <Ionicons name="cart-outline" size={24} color={Colors.text} />
-                </TouchableOpacity>
-            </View>
+        <View className="flex-1 bg-white">
+            {/* Transparent Header */}
+            <SafeAreaView className="absolute top-0 left-0 right-0 z-50">
+                <View className="flex-row items-center justify-between px-4 h-14">
+                    <TouchableOpacity
+                        onPress={() => navigation.goBack()}
+                        className="w-10 h-10 items-center justify-center bg-white/80 rounded-full shadow-sm"
+                    >
+                        <Ionicons name="chevron-back" size={24} color="#000" />
+                    </TouchableOpacity>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-                <SecureImage
-                    source={{ uri: imageUrl || '' }}
-                    style={styles.mainImage}
-                    fallbackComponent={<View style={styles.imagePlaceholder} />}
-                />
+                    <TouchableOpacity
+                        onPress={() => (navigation.navigate as any)('MainTabs', { screen: 'Cart' })}
+                        className="w-10 h-10 items-center justify-center bg-white/80 rounded-full shadow-sm"
+                    >
+                        <Ionicons name="cart-outline" size={24} color="#000" />
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
 
-                <View style={styles.infoContainer}>
-                    <View style={styles.titleRow}>
-                        <Text style={styles.productTitle}>{product.title}</Text>
-                        <Text style={styles.productCode}>
-                            {product.universalcode ? `#${product.universalcode}` : ''}
-                        </Text>
+            <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+                {/* Hero Image Section */}
+                <View className="relative bg-silver-50">
+                    <SecureImage
+                        source={{ uri: imageUrl || '' }}
+                        className="w-full aspect-[4/5]"
+                        fallbackComponent={<View className="w-full aspect-[4/5] bg-silver-200 items-center justify-center"><Ionicons name="image-outline" size={64} color="#AEAEB2" /></View>}
+                    />
+                    {/* Shadow overlay for bottom fade if needed */}
+                </View>
+
+                <View className="px-6 py-8">
+                    {/* Title & Badge Section */}
+                    <View className="flex-row justify-between items-start mb-4">
+                        <View className="flex-1 mr-4">
+                            <Text className="text-3xl font-bold text-black tracking-tight leading-tight">{product.title}</Text>
+                            {product.universalcode ? (
+                                <View className="mt-2 bg-silver-100 self-start px-2 py-1 rounded-md">
+                                    <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-widest">{product.universalcode}</Text>
+                                </View>
+                            ) : null}
+                        </View>
                     </View>
 
+                    {/* Description Section */}
                     {description && (
-                        <View style={styles.section}>
-                            <Text style={styles.descriptionText}>{description}</Text>
+                        <View className="mb-10">
+                            <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[2.5px] mb-3">About</Text>
+                            <Text className="text-base text-brand-secondary leading-[26px] font-medium">{description}</Text>
                         </View>
                     )}
 
+                    {/* Options Mapping */}
                     {optionsGroups && Object.entries(optionsGroups).map(([group, optIds]) => (
-                        <View key={group} style={styles.section}>
-                            <Text style={styles.sectionTitle}>{group}</Text>
-                            <View style={styles.optionsGrid}>
+                        <View key={group} className="mb-10">
+                            <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[2.5px] mb-4">{group}</Text>
+                            <View className="flex-row flex-wrap gap-2.5">
                                 {optIds.map((id) => {
                                     const title = nodeMap.get(id) || id;
                                     const isSelected = selectedOptions[group] === id;
                                     return (
                                         <TouchableOpacity
                                             key={id}
-                                            style={[
-                                                styles.optionChip,
-                                                isSelected && styles.optionChipSelected
-                                            ]}
+                                            className={`px-6 py-3.5 rounded-2xl border ${isSelected ? 'bg-black border-black' : 'bg-white border-silver-200'}`}
                                             onPress={() => handleSelectOption(group, id)}
                                         >
-                                            <Text style={[
-                                                styles.optionText,
-                                                isSelected && styles.optionTextSelected
-                                            ]}>
+                                            <Text className={`text-[13px] font-bold uppercase tracking-wider ${isSelected ? 'text-white' : 'text-black'}`}>
                                                 {title}
                                             </Text>
                                         </TouchableOpacity>
@@ -181,210 +169,50 @@ export function ProductDetailsScreen() {
                         </View>
                     ))}
 
+                    {/* Extra space for scrolling past the floating bar */}
+                    <View className="h-32" />
                 </View>
             </ScrollView>
 
-            <View style={styles.footerContainer}>
+            {/* Bottom Floating Action Bar */}
+            <SafeAreaView className="absolute bottom-0 left-0 right-0">
                 {showSuccess && (
-                    <View style={styles.successBar}>
-                        <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-                        <Text style={styles.successText}>Added to cart!</Text>
+                    <View className="mx-6 mb-4 bg-green-500 flex-row items-center px-5 py-4 rounded-3xl shadow-lg border border-green-400">
+                        <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                        <Text className="text-white text-sm font-bold flex-1 ml-3">Added to cart successfully</Text>
                         <TouchableOpacity onPress={() => (navigation.navigate as any)('MainTabs', { screen: 'Cart' })}>
-                            <Text style={styles.viewCartLink}>View Cart</Text>
+                            <Text className="text-white text-sm font-bold underline">View</Text>
                         </TouchableOpacity>
                     </View>
                 )}
-                <View style={styles.footer}>
-                    <View style={styles.quantityContainer}>
+
+                <View className="mx-6 mb-6 p-4 bg-white rounded-[40px] shadow-2xl shadow-black/30 border border-silver-100 flex-row items-center">
+                    <View className="flex-row items-center bg-silver-50 rounded-full px-2 h-14 w-32 border border-silver-100">
                         <TouchableOpacity
-                            style={styles.quantityButton}
+                            className="w-10 h-10 items-center justify-center"
                             onPress={() => setQuantity(Math.max(1, quantity - 1))}
                         >
-                            <Ionicons name="remove" size={20} color={Colors.text} />
+                            <Ionicons name="remove" size={18} color="#000" />
                         </TouchableOpacity>
-                        <Text style={styles.quantityText}>{quantity}</Text>
+                        <Text className="flex-1 text-lg font-bold text-black text-center">{quantity}</Text>
                         <TouchableOpacity
-                            style={styles.quantityButton}
+                            className="w-10 h-10 items-center justify-center"
                             onPress={() => setQuantity(quantity + 1)}
                         >
-                            <Ionicons name="add" size={20} color={Colors.text} />
+                            <Ionicons name="add" size={18} color="#000" />
                         </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart}>
-                        <Text style={styles.addToCartText}>Add to Cart</Text>
-                    </TouchableOpacity>
+                    <View className="flex-1 ml-4">
+                        <Button
+                            label="Add to Cart"
+                            onPress={handleAddToCart}
+                            size="lg"
+                            className="w-full"
+                        />
+                    </View>
                 </View>
-            </View>
-        </SafeAreaView>
-
+            </SafeAreaView>
+        </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.background,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 8,
-        height: 56,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.separator,
-    },
-    backButton: {
-        width: 44,
-        height: 44,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    cartButton: {
-        width: 44,
-        height: 44,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: Colors.text,
-        flex: 1,
-        textAlign: 'center',
-    },
-    mainImage: {
-        width: width,
-        aspectRatio: 1,
-        backgroundColor: '#F9F9FB',
-    },
-    imagePlaceholder: {
-        width: width,
-        aspectRatio: 1,
-        backgroundColor: '#F2F2F7',
-    },
-    infoContainer: {
-        padding: 20,
-    },
-    titleRow: {
-        marginBottom: 20,
-    },
-    productTitle: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: Colors.text,
-        marginBottom: 4,
-    },
-    productCode: {
-        fontSize: 14,
-        color: Colors.textSecondary,
-        fontWeight: '500',
-    },
-    section: {
-        marginBottom: 32,
-    },
-    sectionTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: Colors.text,
-        marginBottom: 12,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    descriptionText: {
-        fontSize: 16,
-        lineHeight: 24,
-        color: Colors.textSecondary,
-    },
-    optionsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    optionChip: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: Colors.separator,
-        backgroundColor: Colors.surface,
-    },
-    optionChipSelected: {
-        backgroundColor: Colors.primary,
-        borderColor: Colors.primary,
-    },
-    optionText: {
-        fontSize: 14,
-        color: Colors.text,
-        fontWeight: '500',
-    },
-    optionTextSelected: {
-        color: '#FFFFFF',
-    },
-    footerContainer: {
-        borderTopWidth: 1,
-        borderTopColor: Colors.separator,
-    },
-    successBar: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F2FBF4',
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        gap: 8,
-    },
-    successText: {
-        color: '#1A1A1A',
-        fontSize: 14,
-        fontWeight: '500',
-        flex: 1,
-    },
-    viewCartLink: {
-        color: Colors.text,
-        fontSize: 14,
-        fontWeight: '700',
-        textDecorationLine: 'underline',
-    },
-    footer: {
-        padding: 20,
-        paddingBottom: Platform.OS === 'ios' ? 20 : 30,
-        flexDirection: 'row',
-        gap: 12,
-    },
-
-    quantityContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.surface,
-        borderRadius: 16,
-        paddingHorizontal: 8,
-        height: 56,
-    },
-    quantityButton: {
-        width: 36,
-        height: 36,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    quantityText: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: Colors.text,
-        minWidth: 30,
-        textAlign: 'center',
-    },
-    addToCartButton: {
-        flex: 1,
-        backgroundColor: Colors.primary,
-        height: 56,
-        borderRadius: 16,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    addToCartText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-});

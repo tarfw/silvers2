@@ -1,29 +1,16 @@
 import React, { useState, useCallback } from 'react';
 import {
   View,
-  TextInput,
-  StyleSheet,
   Text,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-
-// Notion-like minimal color palette
-const Colors = {
-  background: '#FFFFFF',
-  primary: '#000000',
-  text: '#000000',
-  textSecondary: '#6B6B6B',
-  textTertiary: '#9B9B9B',
-  border: '#E3E3E3',
-  borderFocus: '#000000',
-  error: '#FF3B30',
-  divider: '#F0F0F0',
-};
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Ionicons } from '@expo/vector-icons';
 
 export function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -31,7 +18,6 @@ export function AuthScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [focusedField, setFocusedField] = useState<string | null>(null);
   const { signIn, signUp } = useAuth();
 
   const handleSubmit = useCallback(async () => {
@@ -73,97 +59,86 @@ export function AuthScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      className="flex-1 bg-white"
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 32 }}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>{isSignUp ? 'Create account' : 'Sign in'}</Text>
-          <Text style={styles.subtitle}>
-            {isSignUp ? 'Start organizing your tasks' : 'Welcome back to your tasks'}
+        <View className="mb-12">
+          <Text className="text-4xl font-bold text-black tracking-tighter mb-2">
+            {isSignUp ? 'Create account' : 'Welcome back'}
+          </Text>
+          <Text className="text-lg text-brand-secondary font-medium">
+            {isSignUp ? 'Join the premium experience' : 'Sign in to your Silvers account'}
           </Text>
         </View>
 
-        {/* Form */}
-        <View style={styles.form}>
+        <View className="w-full max-w-sm self-center">
           {error && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View className="bg-red-50 p-4 rounded-2xl mb-6 border border-red-100">
+              <Text className="text-red-600 text-sm font-medium">{error}</Text>
             </View>
           )}
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={[
-                styles.input,
-                focusedField === 'email' && styles.inputFocused,
-              ]}
-              placeholder="your@email.com"
-              placeholderTextColor={Colors.textTertiary}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              onFocus={() => setFocusedField('email')}
-              onBlur={() => setFocusedField(null)}
-            />
-          </View>
+          <Input
+            label="Email Address"
+            placeholder="name@example.com"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            icon="mail-outline"
+          />
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={[
-                styles.input,
-                focusedField === 'password' && styles.inputFocused,
-              ]}
-              placeholder="Enter your password"
-              placeholderTextColor={Colors.textTertiary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              onFocus={() => setFocusedField('password')}
-              onBlur={() => setFocusedField(null)}
-            />
-          </View>
+          <Input
+            label="Password"
+            placeholder="Min. 6 characters"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+            icon="lock-closed-outline"
+          />
 
-          <TouchableOpacity
-            style={[styles.button, !isFormValid && styles.buttonDisabled]}
+          <Button
+            label={isSignUp ? 'Create account' : 'Sign In'}
             onPress={handleSubmit}
-            disabled={!isFormValid || isLoading}
-            activeOpacity={0.8}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.buttonText}>
-                {isSignUp ? 'Create account' : 'Continue'}
-              </Text>
-            )}
-          </TouchableOpacity>
+            isLoading={isLoading}
+            disabled={!isFormValid}
+            size="lg"
+            className="mt-4"
+          />
         </View>
 
-        {/* Divider */}
-        <View style={styles.dividerContainer}>
-          <View style={styles.divider} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={styles.divider} />
+        <View className="flex-row items-center mt-8 mb-6">
+          <View className="flex-1 h-[1px] bg-silver-100" />
+          <Text className="mx-4 text-silver-400 text-xs font-bold uppercase tracking-widest">or</Text>
+          <View className="flex-1 h-[1px] bg-silver-100" />
         </View>
 
-        {/* Toggle */}
+        <View className="w-full max-w-sm self-center">
+          <Button
+            label="Continue with Google"
+            onPress={() => { }} // TODO: Implement Google Sign In
+            variant="outline"
+            size="lg"
+            icon={<Ionicons name="logo-google" size={20} color="#000" />}
+          />
+        </View>
+
+        <View className="flex-1" />
+
         <TouchableOpacity
-          style={styles.toggleButton}
           onPress={toggleMode}
           activeOpacity={0.7}
+          className="items-center py-6"
         >
-          <Text style={styles.toggleText}>
+          <Text className="text-brand-secondary text-base">
             {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-            <Text style={styles.toggleTextBold}>
-              {isSignUp ? ' Sign in' : ' Create account'}
+            <Text className="text-black font-bold">
+              {isSignUp ? ' Sign In' : ' Create account'}
             </Text>
           </Text>
         </TouchableOpacity>
@@ -171,125 +146,3 @@ export function AuthScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 32,
-    paddingTop: Platform.OS === 'ios' ? 100 : 80,
-    paddingBottom: Platform.OS === 'ios' ? 50 : 32,
-  },
-  // Header
-  header: {
-    marginBottom: 48,
-  },
-  title: {
-    fontSize: 36,
-    fontWeight: '600',
-    color: Colors.text,
-    letterSpacing: -0.5,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    fontWeight: '400',
-  },
-  // Form
-  form: {
-    width: '100%',
-    maxWidth: 400,
-    alignSelf: 'center',
-  },
-  errorBox: {
-    backgroundColor: Colors.error + '10',
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 20,
-  },
-  errorText: {
-    color: Colors.error,
-    fontSize: 14,
-    fontWeight: '400',
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  input: {
-    backgroundColor: Colors.background,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: Colors.text,
-    fontWeight: '400',
-  },
-  inputFocused: {
-    borderColor: Colors.borderFocus,
-    borderWidth: 2,
-    paddingHorizontal: 15,
-    paddingVertical: 13,
-  },
-  button: {
-    backgroundColor: Colors.primary,
-    borderRadius: 4,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  buttonDisabled: {
-    backgroundColor: Colors.textTertiary,
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  // Divider
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 32,
-    marginBottom: 24,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.divider,
-  },
-  dividerText: {
-    fontSize: 14,
-    color: Colors.textTertiary,
-    marginHorizontal: 16,
-    fontWeight: '400',
-  },
-  // Toggle
-  toggleButton: {
-    alignItems: 'center',
-  },
-  toggleText: {
-    fontSize: 15,
-    color: Colors.textSecondary,
-    fontWeight: '400',
-  },
-  toggleTextBold: {
-    color: Colors.text,
-    fontWeight: '500',
-  },
-});

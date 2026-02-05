@@ -1,18 +1,11 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, SafeAreaView, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { generateShortId } from '../lib/utils';
-
-const Colors = {
-    background: '#FFFFFF',
-    text: '#000000',
-    textSecondary: '#636366',
-    primary: '#000000',
-    separator: '#F2F2F7',
-    surface: '#F9F9FB',
-};
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 
 export function CheckoutAddressScreen() {
     const { user, db } = useAuth();
@@ -74,19 +67,16 @@ export function CheckoutAddressScreen() {
             const orderId = `order_${generateShortId()}`;
             const timestamp = new Date().toISOString();
 
-            // 1. Create the persistent Order Stream
             await db.run(`
                 INSERT INTO streams (id, scope, createdby, createdat)
                 VALUES (?, ?, ?, ?)
             `, [orderId, 'order', user.id, timestamp]);
 
-            // 2. Add user as participant (streamcollab)
             await db.run(`
                 INSERT INTO streamcollab (streamid, actorid, role, joinedat)
                 VALUES (?, ?, ?, ?)
             `, [orderId, user.id, 'owner', timestamp]);
 
-            // 3. Move each cart item as an Atomic Event (Opcode 501)
             for (const item of cartItems) {
                 const eventId = generateShortId();
                 await db.run(`
@@ -104,7 +94,6 @@ export function CheckoutAddressScreen() {
                 ]);
             }
 
-            // 4. Save Shipping Address Snapshot (Opcode 506)
             await db.run(`
                 INSERT INTO orevents (id, streamid, opcode, refid, delta, payload, scope, ts)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -119,7 +108,6 @@ export function CheckoutAddressScreen() {
                 timestamp
             ]);
 
-            // 5. Update Address History in Metadata
             let updatedHistory = [...addressHistory];
             const normalizedNew = finalAddressText.toLowerCase().trim();
             const existingIdx = updatedHistory.findIndex(a => a.text.toLowerCase().trim() === normalizedNew);
@@ -147,11 +135,8 @@ export function CheckoutAddressScreen() {
                 user.id
             ]);
 
-            // 6. Clear current cart
             await db.run('DELETE FROM orevents WHERE opcode = ? AND refid = ?', [401, user.id]);
 
-            // Navigate directly to OrderDetails with a success flag
-            // Use replace to prevent going back to the shipping screen
             navigation.replace('OrderDetails', {
                 streamId: orderId,
                 justPlaced: true
@@ -166,247 +151,96 @@ export function CheckoutAddressScreen() {
 
     if (isLoading) {
         return (
-            <SafeAreaView style={styles.container}>
-                <View style={styles.center}>
-                    <ActivityIndicator color={Colors.primary} />
+            <SafeAreaView className="flex-1 bg-white">
+                <View className="flex-1 justify-center items-center">
+                    <ActivityIndicator color="#000" />
                 </View>
             </SafeAreaView>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.text} />
+        <SafeAreaView className="flex-1 bg-white">
+            <View className="flex-row items-center px-5 pt-4 pb-5">
+                <TouchableOpacity onPress={() => navigation.goBack()} className="mr-4">
+                    <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
-                <Text style={styles.title}>Shipping</Text>
+                <Text className="text-2xl font-bold text-black">Shipping</Text>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <Text style={styles.sectionTitle}>Where should we send your order?</Text>
+            <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+                <Text className="text-lg font-semibold text-black mb-6 mt-2">Where should we send your order?</Text>
 
                 {addressHistory.length > 0 && !isAddingNew ? (
-                    <View style={styles.addressList}>
+                    <View className="gap-3">
                         {addressHistory.map((addr) => (
                             <TouchableOpacity
                                 key={addr.id}
-                                style={[styles.addressItem, selectedAddressId === addr.id && styles.selectedAddress]}
+                                className={`flex-row items-center p-4 rounded-2xl border ${selectedAddressId === addr.id ? 'border-brand-primary bg-white' : 'border-transparent bg-silver-50'}`}
                                 onPress={() => setSelectedAddressId(addr.id)}
                             >
                                 <Ionicons
                                     name={selectedAddressId === addr.id ? "radio-button-on" : "radio-button-off"}
                                     size={20}
-                                    color={selectedAddressId === addr.id ? Colors.primary : Colors.textSecondary}
+                                    color={selectedAddressId === addr.id ? "#000" : "#636366"}
                                 />
-                                <View style={styles.addressContent}>
-                                    <Text style={styles.addressText}>{addr.text}</Text>
-                                    {addr.isDefault && <Text style={styles.defaultLabel}>Default</Text>}
+                                <View className="flex-1 ml-3">
+                                    <Text className="text-base text-black">{addr.text}</Text>
+                                    {addr.isDefault && <Text className="text-[10px] font-bold text-brand-primary mt-1 uppercase tracking-wider">Default</Text>}
                                 </View>
                             </TouchableOpacity>
                         ))}
                         <TouchableOpacity
-                            style={styles.addNewButton}
+                            className="flex-row items-center p-3 mt-2"
                             onPress={() => setIsAddingNew(true)}
                         >
-                            <Ionicons name="add" size={20} color={Colors.primary} />
-                            <Text style={styles.addNewText}>Use a different address</Text>
+                            <Ionicons name="add" size={20} color="#000" />
+                            <Text className="text-base font-semibold text-brand-primary ml-2">Use a different address</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (
-                    <View style={styles.newAddressContainer}>
-                        <View style={styles.inputWrapper}>
-                            <Ionicons name="location-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
-                            <TextInput
-                                value={newAddress}
-                                onChangeText={setNewAddress}
-                                placeholder="Enter full shipping address..."
-                                style={styles.addressInput}
-                                multiline
-                                autoFocus
-                                placeholderTextColor={Colors.textSecondary}
-                            />
-                        </View>
+                    <View className="gap-4">
+                        <Input
+                            value={newAddress}
+                            onChangeText={setNewAddress}
+                            placeholder="Enter full shipping address..."
+                            multiline
+                            numberOfLines={4}
+                            autoFocus
+                            textAlignVertical="top"
+                            containerClassName="h-32 mb-8"
+                        />
                         <TouchableOpacity
-                            style={styles.defaultCheckbox}
+                            className="flex-row items-center pl-1"
                             onPress={() => setSetAsDefault(!setAsDefault)}
                         >
                             <Ionicons
                                 name={setAsDefault ? "checkbox" : "square-outline"}
-                                size={20}
-                                color={setAsDefault ? Colors.primary : Colors.textSecondary}
+                                size={22}
+                                color={setAsDefault ? "#000" : "#636366"}
                             />
-                            <Text style={styles.checkboxLabel}>Set as default address</Text>
+                            <Text className="text-sm text-black ml-2.5">Set as default address</Text>
                         </TouchableOpacity>
                         {addressHistory.length > 0 && (
                             <TouchableOpacity
                                 onPress={() => setIsAddingNew(false)}
-                                style={styles.cancelNewButton}
+                                className="py-3 items-center"
                             >
-                                <Text style={styles.cancelNewText}>Choose from saved addresses</Text>
+                                <Text className="text-sm text-brand-secondary font-medium">Choose from saved addresses</Text>
                             </TouchableOpacity>
                         )}
                     </View>
                 )}
             </ScrollView>
 
-            <View style={styles.footer}>
-                <TouchableOpacity
-                    style={[styles.placeOrderButton, isProcessing && styles.disabledButton]}
+            <View className="p-5 border-t border-silver-100 bg-white">
+                <Button
+                    label="Confirm & Place Order"
                     onPress={handlePlaceOrder}
-                    disabled={isProcessing}
-                >
-                    {isProcessing ? (
-                        <ActivityIndicator color="#FFF" />
-                    ) : (
-                        <Text style={styles.placeOrderText}>Confirm & Place Order</Text>
-                    )}
-                </TouchableOpacity>
+                    isLoading={isProcessing}
+                    size="lg"
+                />
             </View>
         </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.background,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 20,
-    },
-    backButton: {
-        marginRight: 16,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: Colors.text,
-    },
-    center: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    scrollContent: {
-        paddingHorizontal: 20,
-        paddingBottom: 100,
-    },
-    sectionTitle: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: Colors.text,
-        marginBottom: 24,
-        marginTop: 8,
-    },
-    addressList: {
-        gap: 12,
-    },
-    addressItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.surface,
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: 'transparent',
-    },
-    selectedAddress: {
-        borderColor: Colors.primary,
-        backgroundColor: '#FFF',
-    },
-    addressContent: {
-        flex: 1,
-        marginLeft: 12,
-    },
-    addressText: {
-        fontSize: 15,
-        color: Colors.text,
-        lineHeight: 20,
-    },
-    defaultLabel: {
-        fontSize: 11,
-        fontWeight: '700',
-        color: Colors.primary,
-        marginTop: 4,
-        textTransform: 'uppercase',
-    },
-    addNewButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 12,
-        marginTop: 8,
-    },
-    addNewText: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: Colors.primary,
-        marginLeft: 8,
-    },
-    newAddressContainer: {
-        gap: 16,
-    },
-    inputWrapper: {
-        flexDirection: 'row',
-        backgroundColor: Colors.surface,
-        borderRadius: 16,
-        padding: 16,
-        alignItems: 'flex-start',
-    },
-    inputIcon: {
-        marginTop: 2,
-    },
-    addressInput: {
-        flex: 1,
-        marginLeft: 12,
-        fontSize: 16,
-        color: Colors.text,
-        minHeight: 120,
-        textAlignVertical: 'top',
-        padding: 0,
-    },
-    defaultCheckbox: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingLeft: 4,
-    },
-    checkboxLabel: {
-        fontSize: 14,
-        color: Colors.text,
-        marginLeft: 10,
-    },
-    cancelNewButton: {
-        padding: 12,
-        alignItems: 'center',
-    },
-    cancelNewText: {
-        fontSize: 14,
-        color: Colors.textSecondary,
-        fontWeight: '500',
-    },
-    footer: {
-        padding: 20,
-        borderTopWidth: 1,
-        borderTopColor: Colors.separator,
-        backgroundColor: Colors.background,
-    },
-    placeOrderButton: {
-        backgroundColor: Colors.primary,
-        height: 56,
-        borderRadius: 28,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    disabledButton: {
-        opacity: 0.6,
-    },
-    placeOrderText: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: '700',
-    },
-});

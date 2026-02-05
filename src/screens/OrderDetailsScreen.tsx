@@ -1,30 +1,25 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, Alert, BackHandler } from 'react-native';
+import { View, Text, SafeAreaView, TouchableOpacity, ActivityIndicator, ScrollView, Alert, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { SecureImage } from '../components/SecureImage';
 import { generateShortId } from '../lib/utils';
 
-const Colors = {
-    background: '#FFFFFF',
-    text: '#000000',
-    textSecondary: '#636366',
-    primary: '#000000',
-    separator: '#F2F2F7',
-    surface: '#F9F9FB',
+const COLORS = {
     success: '#34C759',
     accent: '#007AFF',
     warning: '#FF9500',
     danger: '#FF3B30',
+    silver: '#636366',
 };
 
 const STATUS_MAP: Record<number, { label: string; color: string; icon: string }> = {
-    501: { label: 'Placed', color: Colors.textSecondary, icon: 'receipt-outline' },
-    502: { label: 'Paid', color: Colors.accent, icon: 'cash-outline' },
-    503: { label: 'Shipped', color: Colors.warning, icon: 'airplane-outline' },
-    504: { label: 'Delivered', color: Colors.success, icon: 'checkmark-circle-outline' },
-    505: { label: 'Cancelled', color: Colors.danger, icon: 'close-circle-outline' },
+    501: { label: 'Placed', color: COLORS.silver, icon: 'receipt-outline' },
+    502: { label: 'Paid', color: COLORS.accent, icon: 'cash-outline' },
+    503: { label: 'Shipped', color: COLORS.warning, icon: 'airplane-outline' },
+    504: { label: 'Delivered', color: COLORS.success, icon: 'checkmark-circle-outline' },
+    505: { label: 'Cancelled', color: COLORS.danger, icon: 'close-circle-outline' },
 };
 
 export function OrderDetailsScreen() {
@@ -34,7 +29,6 @@ export function OrderDetailsScreen() {
     const { db, user } = useAuth();
 
     const [items, setItems] = useState<any[]>([]);
-    const [events, setEvents] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [currentStatus, setCurrentStatus] = useState(501);
     const [creatorDetails, setCreatorDetails] = useState<{ name: string; email: string } | null>(null);
@@ -46,20 +40,14 @@ export function OrderDetailsScreen() {
         setIsLoading(true);
 
         try {
-            // 1. Load all events for this order stream
             const allEvents = await db.all(
                 'SELECT * FROM orevents WHERE streamid = ? ORDER BY ts DESC',
                 [streamId]
             ) as any[];
 
-            // 2. Separate Items (501) from Status Updates (502-505)
             const orderItems = allEvents.filter(e => e.opcode === 501);
-            const statusEvents = allEvents.filter(e => e.opcode >= 502 && e.opcode <= 505);
-
-            // 3. Determine latest status
             const latestStatus = allEvents.find(e => e.opcode >= 501 && e.opcode <= 505);
 
-            // 4. Fetch creator details
             const streamInfo = await db.all(
                 'SELECT a.name, a.globalcode as email FROM streams s LEFT JOIN actors a ON s.createdby = a.id WHERE s.id = ?',
                 [streamId]
@@ -69,7 +57,6 @@ export function OrderDetailsScreen() {
                 setCreatorDetails(streamInfo[0]);
             }
 
-            // 5. Fetch shipping address (Opcode 506)
             const addressEvent = allEvents.find(e => e.opcode === 506);
             if (addressEvent) {
                 const payload = JSON.parse(addressEvent.payload);
@@ -77,7 +64,6 @@ export function OrderDetailsScreen() {
             }
 
             setItems(orderItems);
-            setEvents(allEvents);
             setCurrentStatus(latestStatus?.opcode || 501);
         } catch (error) {
             console.error('Error loading order details:', error);
@@ -90,17 +76,15 @@ export function OrderDetailsScreen() {
         useCallback(() => {
             loadOrderDetails();
 
-            // Handle native back button
             const onBackPress = () => {
                 if (route.params?.justPlaced) {
                     (navigation as any).navigate('MainTabs');
-                    return true; // Prevent default behavior
+                    return true;
                 }
-                return false; // Default behavior
+                return false;
             };
 
             BackHandler.addEventListener('hardwareBackPress', onBackPress);
-
             return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
         }, [loadOrderDetails, route.params?.justPlaced, navigation])
     );
@@ -128,33 +112,38 @@ export function OrderDetailsScreen() {
         }
     };
 
-    const renderItem = ({ item }: { item: any }) => {
+    const renderItem = (item: any, isLast: boolean) => {
         const payload = JSON.parse(item.payload);
         const options = payload.options || {};
 
         return (
-            <View style={styles.itemRow}>
-                <SecureImage source={{ uri: payload.image }} style={styles.itemImage} />
-                <View style={styles.itemTextContainer}>
-                    <Text style={styles.itemName}>{payload.name}</Text>
-                    <View style={styles.optionsContainer}>
-                        {Object.entries(options).map(([key, val]: [string, any]) => (
-                            <Text key={key} style={styles.optionText}>{key}: {val}</Text>
-                        ))}
+            <View key={item.id}>
+                <View className="flex-row items-center py-4">
+                    <SecureImage source={{ uri: payload.image }} className="w-16 h-16 rounded-2xl bg-white" />
+                    <View className="flex-1 ml-4 justify-center">
+                        <Text className="text-base font-bold text-black" numberOfLines={1}>{payload.name}</Text>
+                        <View className="flex-row flex-wrap gap-2 mt-1.5">
+                            {Object.entries(options).map(([key, val]: [string, any]) => (
+                                <View key={key} className="bg-white px-2 py-0.5 rounded-md border border-silver-100">
+                                    <Text className="text-[10px] text-brand-secondary font-medium uppercase tracking-tight">{key}: {val}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+                    <View className="ml-4 bg-white px-3 py-1.5 rounded-xl border border-silver-100">
+                        <Text className="text-sm font-bold text-black">x{item.delta}</Text>
                     </View>
                 </View>
-                <View style={styles.qtyContainer}>
-                    <Text style={styles.qtyText}>x{item.delta}</Text>
-                </View>
+                {!isLast && <View className="h-[1px] bg-silver-100 opacity-50" />}
             </View>
         );
     };
 
     if (isLoading) {
         return (
-            <SafeAreaView style={styles.container}>
-                <View style={styles.center}>
-                    <ActivityIndicator color={Colors.primary} />
+            <SafeAreaView className="flex-1 bg-white">
+                <View className="flex-1 justify-center items-center">
+                    <ActivityIndicator color="#000" />
                 </View>
             </SafeAreaView>
         );
@@ -164,28 +153,28 @@ export function OrderDetailsScreen() {
     const statusInfo = STATUS_MAP[currentStatus];
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
+        <SafeAreaView className="flex-1 bg-white">
+            <View className="flex-row items-center px-5 pt-4 pb-5">
                 <TouchableOpacity
                     onPress={() => {
                         if (route.params?.justPlaced) {
-                            (navigation as any).navigate('MainTabs');
+                            (navigation as any).navigate('Home');
                         } else {
                             navigation.goBack();
                         }
                     }}
-                    style={styles.backButton}
+                    className="mr-4"
                 >
-                    <Ionicons name="arrow-back" size={24} color={Colors.text} />
+                    <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
-                <Text style={styles.title}>Order #{orderNum}</Text>
+                <Text className="text-2xl font-bold text-black">Order #{orderNum}</Text>
             </View>
 
             {showSuccessBar && (
-                <View style={styles.successBar}>
-                    <View style={styles.successBarContent}>
+                <View className="mx-5 mb-4 p-4 rounded-2xl bg-success flex-row items-center justify-between">
+                    <View className="flex-row items-center">
                         <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-                        <Text style={styles.successBarText}>Order placed successfully!</Text>
+                        <Text className="text-white text-sm font-bold ml-2">Order placed successfully!</Text>
                     </View>
                     <TouchableOpacity onPress={() => setShowSuccessBar(false)}>
                         <Ionicons name="close" size={20} color="#FFF" />
@@ -193,70 +182,26 @@ export function OrderDetailsScreen() {
                 </View>
             )}
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
                 {/* Status Section */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Current Status</Text>
-                    <View style={[styles.statusCard, { borderColor: statusInfo.color + '40' }]}>
-                        <Ionicons name={statusInfo.icon as any} size={24} color={statusInfo.color} />
-                        <Text style={[styles.statusLabel, { color: statusInfo.color }]}>
+                <View className="mb-8">
+                    <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-widest mb-3 ml-1">Current Status</Text>
+                    <View className="flex-row items-center bg-silver-50 rounded-3xl p-5 border border-silver-100">
+                        <Ionicons name={statusInfo.icon as any} size={28} color={statusInfo.color} />
+                        <Text className="text-xl font-bold ml-4" style={{ color: statusInfo.color }}>
                             {statusInfo.label}
                         </Text>
                     </View>
                 </View>
 
-                {/* Customer Section */}
-                {creatorDetails && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Customer Details</Text>
-                        <View style={styles.customerCard}>
-                            <View style={styles.customerAvatar}>
-                                <Text style={styles.avatarText}>{creatorDetails.name.charAt(0)}</Text>
-                            </View>
-                            <View style={styles.customerInfo}>
-                                <Text style={styles.customerName}>{creatorDetails.name}</Text>
-                                <Text style={styles.customerEmail}>{creatorDetails.email}</Text>
-                            </View>
-                        </View>
-                    </View>
-                )}
-
-                {/* Shipping Section */}
-                {shippingAddress && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Shipping Address</Text>
-                        <View style={styles.shippingCard}>
-                            <Ionicons name="location-sharp" size={20} color={Colors.textSecondary} />
-                            <Text style={styles.shippingText}>{shippingAddress}</Text>
-                        </View>
-                    </View>
-                )}
-
-                {/* Items Section */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Items ({items.length})</Text>
-                    <View style={styles.itemsCard}>
-                        {items.map((item, index) => (
-                            <View key={item.id}>
-                                {renderItem({ item })}
-                                {index < items.length - 1 && <View style={styles.separator} />}
-                            </View>
-                        ))}
-                    </View>
-                </View>
-
-                {/* Process Section (Opcodes Demo) */}
-                <View style={[styles.section, { marginBottom: 100 }]}>
-                    <Text style={styles.sectionTitle}>Update Process</Text>
-                    <View style={styles.actionsGrid}>
+                {/* Tracking/Update Process */}
+                <View className="mb-8">
+                    <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-widest mb-3 ml-1">Track & Update</Text>
+                    <View className="flex-row gap-2.5">
                         {[502, 503, 504].map(code => (
                             <TouchableOpacity
                                 key={code}
-                                style={[
-                                    styles.actionButton,
-                                    currentStatus === code && styles.activeAction,
-                                    { borderColor: STATUS_MAP[code].color + '40' }
-                                ]}
+                                className={`flex-1 p-4 rounded-2xl border items-center justify-center ${currentStatus === code ? 'bg-black border-black' : 'bg-silver-50 border-silver-100'}`}
                                 onPress={() => updateStatus(code)}
                             >
                                 <Ionicons
@@ -264,222 +209,46 @@ export function OrderDetailsScreen() {
                                     size={20}
                                     color={currentStatus === code ? '#FFF' : STATUS_MAP[code].color}
                                 />
-                                <Text style={[
-                                    styles.actionText,
-                                    currentStatus === code && styles.activeActionText,
-                                    { color: currentStatus === code ? '#FFF' : Colors.text }
-                                ]}>
-                                    {STATUS_MAP[code].label}
+                                <Text className={`text-[11px] font-bold mt-2 ${currentStatus === code ? 'text-white' : 'text-black'}`}>
+                                    {STATUS_MAP[code].label.toUpperCase()}
                                 </Text>
                             </TouchableOpacity>
                         ))}
+                    </View>
+                </View>
+
+                {/* Customer & Shipping Row */}
+                <View className="flex-row gap-4 mb-8">
+                    {creatorDetails && (
+                        <View className="flex-1">
+                            <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-widest mb-3 ml-1">Customer</Text>
+                            <View className="bg-silver-50 rounded-2xl p-4 border border-silver-100 h-28 justify-center">
+                                <Text className="text-base font-bold text-black" numberOfLines={1}>{creatorDetails.name}</Text>
+                                <Text className="text-xs text-brand-secondary mt-1" numberOfLines={1}>{creatorDetails.email}</Text>
+                            </View>
+                        </View>
+                    )}
+                    {shippingAddress && (
+                        <View className="flex-1">
+                            <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-widest mb-3 ml-1">Shipping</Text>
+                            <View className="bg-silver-50 rounded-2xl p-4 border border-silver-100 h-28">
+                                <View className="flex-row">
+                                    <Ionicons name="location-sharp" size={14} color="#636366" />
+                                    <Text className="text-xs text-black ml-1.5 leading-4" numberOfLines={4}>{shippingAddress}</Text>
+                                </View>
+                            </View>
+                        </View>
+                    )}
+                </View>
+
+                {/* Items Section */}
+                <View className="mb-8">
+                    <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-widest mb-3 ml-1">Items ({items.length})</Text>
+                    <View className="bg-silver-50 rounded-3xl px-4 border border-silver-100">
+                        {items.map((item, index) => renderItem(item, index === items.length - 1))}
                     </View>
                 </View>
             </ScrollView>
         </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.background,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 20,
-    },
-    backButton: {
-        marginRight: 16,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: Colors.text,
-    },
-    center: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    scrollContent: {
-        paddingHorizontal: 20,
-        paddingBottom: 40,
-    },
-    section: {
-        marginBottom: 32,
-    },
-    sectionTitle: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: Colors.textSecondary,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-        marginBottom: 12,
-        marginLeft: 4,
-    },
-    statusCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.surface,
-        borderRadius: 20,
-        padding: 20,
-        borderWidth: 1,
-    },
-    statusLabel: {
-        fontSize: 18,
-        fontWeight: '700',
-        marginLeft: 12,
-    },
-    customerCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.surface,
-        borderRadius: 20,
-        padding: 16,
-    },
-    customerAvatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: Colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    avatarText: {
-        color: '#FFF',
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    customerInfo: {
-        marginLeft: 16,
-    },
-    customerName: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: Colors.text,
-    },
-    customerEmail: {
-        fontSize: 13,
-        color: Colors.textSecondary,
-        marginTop: 2,
-    },
-    shippingCard: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        backgroundColor: Colors.surface,
-        borderRadius: 20,
-        padding: 16,
-    },
-    shippingText: {
-        flex: 1,
-        marginLeft: 12,
-        fontSize: 15,
-        color: Colors.text,
-        lineHeight: 22,
-    },
-    itemsCard: {
-        backgroundColor: Colors.surface,
-        borderRadius: 20,
-        padding: 16,
-    },
-    itemRow: {
-        flexDirection: 'row',
-        paddingVertical: 12,
-        alignItems: 'center',
-    },
-    itemImage: {
-        width: 60,
-        height: 60,
-        borderRadius: 12,
-        backgroundColor: '#FFF',
-    },
-    itemTextContainer: {
-        flex: 1,
-        marginLeft: 16,
-    },
-    itemName: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: Colors.text,
-        marginBottom: 4,
-    },
-    optionsContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    optionText: {
-        fontSize: 12,
-        color: Colors.textSecondary,
-        backgroundColor: '#FFF',
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4,
-    },
-    qtyContainer: {
-        marginLeft: 16,
-        backgroundColor: '#FFF',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-    },
-    qtyText: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: Colors.text,
-    },
-    separator: {
-        height: 1,
-        backgroundColor: Colors.separator,
-        opacity: 0.5,
-    },
-    actionsGrid: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    actionButton: {
-        flex: 1,
-        backgroundColor: Colors.surface,
-        borderRadius: 16,
-        padding: 16,
-        alignItems: 'center',
-        borderWidth: 1,
-    },
-    activeAction: {
-        backgroundColor: Colors.primary,
-        borderColor: Colors.primary,
-    },
-    actionText: {
-        marginTop: 8,
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    activeActionText: {
-        color: '#FFF',
-    },
-    successBar: {
-        backgroundColor: Colors.success,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        marginHorizontal: 20,
-        borderRadius: 12,
-        marginBottom: 8,
-    },
-    successBarContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    successBarText: {
-        color: '#FFF',
-        fontSize: 15,
-        fontWeight: '600',
-        marginLeft: 8,
-    },
-});

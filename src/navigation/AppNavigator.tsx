@@ -24,78 +24,25 @@ import { Platform, StyleSheet } from 'react-native';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+import { BlurView } from 'expo-blur';
+import { cssInterop } from 'nativewind';
+
+cssInterop(BlurView, { className: "style" });
+
+import { CustomTabBar } from '../components/CustomTabBar';
+
 function TabNavigator() {
     return (
         <Tab.Navigator
-            safeAreaInsets={{ bottom: 0, top: 0, left: 0, right: 0 }}
+            tabBar={(props) => <CustomTabBar {...props} />}
             screenOptions={{
                 headerShown: false,
-                tabBarShowLabel: false,
-                tabBarActiveTintColor: '#000000',
-                tabBarInactiveTintColor: '#A1A1AA',
-                tabBarLabelPosition: 'beside-icon',
-                tabBarStyle: {
-                    position: 'absolute',
-                    bottom: 32,
-                    left: 32,
-                    right: 32,
-                    backgroundColor: '#F2F2F7',
-                    borderRadius: 36,
-                    height: 72,
-                    borderTopWidth: 0,
-                    borderWidth: 0,
-                    elevation: 0,
-                    shadowOpacity: 0,
-                    paddingTop: 0,
-                    paddingBottom: 0,
-                },
-                tabBarItemStyle: {
-                    height: 72,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                },
-                tabBarIconStyle: {
-                    marginTop: 0,
-                    marginBottom: 0,
-                },
             }}
         >
-            <Tab.Screen
-                name="Home"
-                component={ProductsScreen}
-                options={{
-                    tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "home" : "home-outline"} size={26} color={color} />
-                    )
-                }}
-            />
-            <Tab.Screen
-                name="Collections"
-                component={CollectionsScreen}
-                options={{
-                    tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "search" : "search-outline"} size={26} color={color} />
-                    )
-                }}
-            />
-            <Tab.Screen
-                name="Cart"
-                component={CartScreen}
-                options={{
-                    tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "cart" : "cart-outline"} size={26} color={color} />
-                    )
-                }}
-            />
-            <Tab.Screen
-                name="Menu"
-                component={MenuScreen}
-                options={{
-                    tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "menu" : "menu-outline"} size={28} color={color} />
-                    )
-                }}
-            />
+            <Tab.Screen name="Home" component={ProductsScreen} />
+            <Tab.Screen name="Collections" component={CollectionsScreen} />
+            <Tab.Screen name="Cart" component={CartScreen} />
+            <Tab.Screen name="Menu" component={MenuScreen} />
         </Tab.Navigator>
     );
 }

@@ -2,25 +2,17 @@ import React, { useState } from 'react';
 import {
     View,
     Text,
-    StyleSheet,
     FlatList,
     TouchableOpacity,
     SafeAreaView,
     RefreshControl,
-    TextInput
 } from 'react-native';
 import { useNodes } from '../hooks/useNodes';
 import { SecureImage } from '../components/SecureImage';
 import { Node } from '../types';
 import { useNavigation } from '@react-navigation/native';
-
-const Colors = {
-    background: '#FFFFFF',
-    text: '#000000',
-    textSecondary: '#636366',
-    separator: '#F2F2F7',
-    primary: '#000000',
-};
+import { Input } from '../components/ui/Input';
+import { Ionicons } from '@expo/vector-icons';
 
 function ProductItem({ node }: { node: Node }) {
     const navigation = useNavigation<any>();
@@ -29,19 +21,19 @@ function ProductItem({ node }: { node: Node }) {
 
     return (
         <TouchableOpacity
-            style={styles.productCard}
+            className="w-[48%] bg-white rounded-2xl mb-4 border border-silver-100 overflow-hidden"
             activeOpacity={0.8}
             onPress={() => navigation.navigate('ProductDetails', { product: node })}
         >
             <SecureImage
                 source={{ uri: imageUrl || '' }}
-                style={styles.productImage}
-                fallbackComponent={<View style={styles.imagePlaceholder} />}
+                className="w-full aspect-square bg-silver-50"
+                fallbackComponent={<View className="w-full aspect-square bg-silver-100" />}
             />
-            <View style={styles.productInfo}>
-                <Text style={styles.productTitle} numberOfLines={1}>{node.title}</Text>
-                <Text style={styles.productPrice}>
-                    {node.universalcode ? `#${node.universalcode}` : 'No code'}
+            <View className="p-3">
+                <Text className="text-sm font-bold text-black" numberOfLines={1}>{node.title}</Text>
+                <Text className="text-[11px] text-brand-secondary font-medium tracking-wide mt-0.5">
+                    {node.universalcode ? `#${node.universalcode}` : 'NO CODE'}
                 </Text>
             </View>
         </TouchableOpacity>
@@ -70,18 +62,21 @@ export function ProductsScreen() {
     );
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>Products</Text>
-                <View style={styles.searchBar}>
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search products..."
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        placeholderTextColor={Colors.textSecondary}
-                    />
+        <SafeAreaView className="flex-1 bg-white">
+            <View className="px-5 pt-4 pb-2">
+                <View className="flex-row justify-between items-end mb-4">
+                    <Text className="text-4xl font-bold text-black tracking-tight">Silvers</Text>
+                    <TouchableOpacity onPress={() => sync()} className="p-2">
+                        <Ionicons name="sync-outline" size={24} color="#000" />
+                    </TouchableOpacity>
                 </View>
+                <Input
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    icon="search"
+                    containerClassName="mb-2"
+                />
             </View>
 
             <FlatList
@@ -89,15 +84,17 @@ export function ProductsScreen() {
                 keyExtractor={(item) => item.id}
                 numColumns={2}
                 renderItem={({ item }) => <ProductItem node={item} />}
-                contentContainerStyle={[styles.list, { paddingBottom: 100 }]}
-                columnWrapperStyle={styles.columnWrapper}
+                contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+                columnWrapperStyle={{ justifyContent: 'space-between' }}
+                showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+                    <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#000" />
                 }
                 ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>
-                            {isLoading ? 'Loading...' : 'No products found'}
+                    <View className="py-20 items-center justify-center">
+                        <Ionicons name="cube-outline" size={48} color="#D1D1D6" />
+                        <Text className="text-silver-600 mt-4 text-base font-medium">
+                            {isLoading ? 'Fetching products...' : 'No products found'}
                         </Text>
                     </View>
                 }
@@ -105,78 +102,3 @@ export function ProductsScreen() {
         </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.background,
-    },
-    header: {
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 20,
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: '700',
-        color: Colors.text,
-        letterSpacing: -0.5,
-    },
-    searchBar: {
-        backgroundColor: '#F2F2F7',
-        borderRadius: 10,
-        paddingHorizontal: 12,
-        height: 40,
-        justifyContent: 'center',
-    },
-    searchInput: {
-        fontSize: 16,
-        color: Colors.text,
-    },
-    list: {
-        padding: 10,
-    },
-    columnWrapper: {
-        justifyContent: 'space-between',
-    },
-    productCard: {
-        width: '48%',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        marginBottom: 16,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: '#F2F2F7',
-    },
-    productImage: {
-        width: '100%',
-        aspectRatio: 1,
-        backgroundColor: '#F9F9FB',
-    },
-    imagePlaceholder: {
-        width: '100%',
-        aspectRatio: 1,
-        backgroundColor: '#F2F2F7',
-    },
-    productInfo: {
-        padding: 10,
-    },
-    productTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: Colors.text,
-        marginBottom: 2,
-    },
-    productPrice: {
-        fontSize: 12,
-        color: Colors.textSecondary,
-    },
-    emptyContainer: {
-        padding: 40,
-        alignItems: 'center',
-    },
-    emptyText: {
-        color: Colors.textSecondary,
-        fontSize: 16,
-    },
-});

@@ -1,4 +1,4 @@
-package com.tarapp.tursotasks
+package com.wetar5.silvers
 
 import android.os.Build
 import android.os.Bundle

@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.tarapp.tursotasks'
+    namespace 'com.wetar5.silvers'
     defaultConfig {
-        applicationId 'com.tarapp.tursotasks'
+        applicationId 'com.wetar5.silvers'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
