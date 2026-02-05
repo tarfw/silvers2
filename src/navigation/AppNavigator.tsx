@@ -9,6 +9,11 @@ import { ProfileScreen } from '../screens/ProfileScreen';
 import { MenuScreen } from '../screens/MenuScreen';
 import { NodesScreen } from '../screens/NodesScreen';
 import { ProductDetailsScreen } from '../screens/ProductDetailsScreen';
+import { OrdersScreen } from '../screens/OrdersScreen';
+import { ReportsScreen } from '../screens/ReportsScreen';
+import { InventoryScreen } from '../screens/InventoryScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
+
 
 import { Ionicons } from '@expo/vector-icons';
 
@@ -123,9 +128,14 @@ export function AppNavigator() {
                 name="ProductDetails"
                 component={ProductDetailsScreen}
                 options={{
-                    headerShown: false, // We use a custom header in the screen
+                    headerShown: false,
                 }}
             />
+            <Stack.Screen name="Orders" component={OrdersScreen} />
+            <Stack.Screen name="Reports" component={ReportsScreen} />
+            <Stack.Screen name="Inventory" component={InventoryScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+
         </Stack.Navigator>
     );
 }

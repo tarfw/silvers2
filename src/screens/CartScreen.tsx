@@ -3,7 +3,9 @@ import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Image
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { SecureImage } from '../components/SecureImage';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { generateShortId } from '../lib/utils';
+
 
 
 const Colors = {
@@ -29,8 +31,11 @@ interface CartEvent {
 
 export function CartScreen() {
     const { user, db } = useAuth();
+    const navigation = useNavigation<any>();
     const [cartItems, setCartItems] = useState<CartEvent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isCheckingOut, setIsCheckingOut] = useState(false);
+
 
     const loadCart = useCallback(async () => {
         if (!db || !user) return;
@@ -38,8 +43,8 @@ export function CartScreen() {
         try {
             // Fetch cart events (opcode 401)
             const rows = await db.all(
-                'SELECT * FROM orevents WHERE opcode = ? ORDER BY ts DESC',
-                [401]
+                'SELECT * FROM orevents WHERE opcode = ? AND refid = ? ORDER BY ts DESC',
+                [401, user.id]
             ) as any[];
             setCartItems(rows);
         } catch (error) {
@@ -65,6 +70,61 @@ export function CartScreen() {
             Alert.alert('Error', 'Failed to remove item');
         }
     };
+
+    const handleCheckout = async () => {
+        if (!db || !user || cartItems.length === 0) return;
+        setIsCheckingOut(true);
+
+        try {
+            const orderId = `order_${generateShortId()}`;
+            const timestamp = new Date().toISOString();
+
+            // 1. Create the persistent Order Stream
+            await db.run(`
+                INSERT INTO streams (id, scope, createdby, createdat)
+                VALUES (?, ?, ?, ?)
+            `, [orderId, 'order', user.id, timestamp]);
+
+            // 2. Add user as participant (streamcollab)
+            await db.run(`
+                INSERT INTO streamcollab (streamid, actorid, role, joinedat)
+                VALUES (?, ?, ?, ?)
+            `, [orderId, user.id, 'owner', timestamp]);
+
+            // 3. Move each cart item as an Atomic Event (Opcode 501)
+            for (const item of cartItems) {
+                const eventId = generateShortId();
+                await db.run(`
+                    INSERT INTO orevents (id, streamid, opcode, refid, delta, payload, scope, ts)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                `, [
+                    eventId,
+                    orderId,
+                    501, // Order Item Placed
+                    user.id, // Actor
+                    item.delta, // Quantity
+                    item.payload, // Item details
+                    'order',
+                    timestamp
+                ]);
+            }
+
+            // 4. Clear the user's cart stream (Opcode 401 events)
+            await db.run('DELETE FROM orevents WHERE opcode = ? AND refid = ?', [401, user.id]);
+
+            Alert.alert('Success', 'Order placed successfully!', [
+                { text: 'OK', onPress: () => navigation.navigate('Orders') }
+            ]);
+
+            setCartItems([]);
+        } catch (error) {
+            console.error('Checkout error:', error);
+            Alert.alert('Error', 'Failed to process checkout');
+        } finally {
+            setIsCheckingOut(false);
+        }
+    };
+
 
     const renderItem = ({ item }: { item: CartEvent }) => {
         const payload = JSON.parse(item.payload);
@@ -133,6 +193,29 @@ export function CartScreen() {
                     ItemSeparatorComponent={() => <View style={styles.separator} />}
                 />
             )}
+
+            {cartItems.length > 0 && (
+                <View style={styles.footer}>
+                    <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>Total Items</Text>
+                        <Text style={styles.totalValue}>
+                            {cartItems.reduce((acc, item) => acc + item.delta, 0)}
+                        </Text>
+                    </View>
+                    <TouchableOpacity
+                        style={[styles.checkoutButton, isCheckingOut && styles.disabledButton]}
+                        onPress={handleCheckout}
+                        disabled={isCheckingOut}
+                    >
+                        {isCheckingOut ? (
+                            <ActivityIndicator color="#FFF" />
+                        ) : (
+                            <Text style={styles.checkoutText}>Order Now</Text>
+                        )}
+                    </TouchableOpacity>
+                </View>
+            )}
+
         </SafeAreaView>
     );
 }
@@ -244,4 +327,48 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: Colors.separator,
     },
+    footer: {
+        padding: 24,
+        paddingBottom: 110, // Avoid overlapping with tab bar
+        borderTopWidth: 1,
+        borderTopColor: Colors.separator,
+        backgroundColor: Colors.background,
+    },
+    totalRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    totalLabel: {
+        fontSize: 16,
+        color: Colors.textSecondary,
+        fontWeight: '500',
+    },
+    totalValue: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: Colors.text,
+    },
+    checkoutButton: {
+        backgroundColor: Colors.primary,
+        height: 56,
+        borderRadius: 28,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    disabledButton: {
+        opacity: 0.6,
+    },
+    checkoutText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: '700',
+    },
 });
+

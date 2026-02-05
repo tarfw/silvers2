@@ -58,6 +58,14 @@ class DatabaseManager {
       this.isInitialized = true;
       console.log(`[${new Date().toLocaleTimeString('en-GB')}] ✅ Schema initialized`);
 
+      // Ensure self-actor exists for this user to participate in streams
+      console.log(`[${new Date().toLocaleTimeString('en-GB')}] 👤 Ensuring self-actor exists...`);
+      await this.db.run(`
+        INSERT INTO actors (id, actortype, globalcode, name)
+        SELECT ?, ?, ?, ?
+        WHERE NOT EXISTS (SELECT 1 FROM actors WHERE id = ?)
+      `, [userId, 'user', userId, 'Self', userId]);
+
       // Add a small delay to let schema changes "settle" before sync starts
       await new Promise(resolve => setTimeout(resolve, 1000));
 
