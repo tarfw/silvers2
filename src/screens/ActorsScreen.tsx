@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, SafeAreaView, FlatList, TouchableOpacity, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, TextInput } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,6 +14,7 @@ interface Actor {
 
 export function ActorsScreen() {
     const navigation = useNavigation<any>();
+    const insets = useSafeAreaInsets();
     const { db } = useAuth();
     const [actors, setActors] = useState<Actor[]>([]);
     const [filteredActors, setFilteredActors] = useState<Actor[]>([]);
@@ -83,48 +85,46 @@ export function ActorsScreen() {
     );
 
     return (
-        <View className="flex-1 bg-white">
-            <SafeAreaView className="flex-1">
-                {/* Search Bar */}
-                <View className="px-5 py-3 border-b border-silver-100 bg-white">
-                    <View className="flex-row items-center bg-silver-50 rounded-2xl px-4 py-2 border border-silver-100">
-                        <Ionicons name="search" size={20} color="#AEAEB2" />
-                        <TextInput
-                            className="flex-1 ml-3 h-10 text-base text-black"
-                            placeholder="Search by name or email..."
-                            value={searchQuery}
-                            onChangeText={handleSearch}
-                            autoCorrect={false}
-                        />
-                        {searchQuery.length > 0 && (
-                            <TouchableOpacity onPress={() => handleSearch('')}>
-                                <Ionicons name="close-circle" size={20} color="#AEAEB2" />
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                </View>
-
-                {isLoading ? (
-                    <View className="flex-1 items-center justify-center">
-                        <ActivityIndicator color="#000" />
-                    </View>
-                ) : filteredActors.length === 0 ? (
-                    <View className="flex-1 items-center justify-center px-10">
-                        <Text className="text-lg font-bold text-black mb-2">No users found</Text>
-                        <Text className="text-base text-brand-secondary text-center">
-                            Could not find any users matching your search.
-                        </Text>
-                    </View>
-                ) : (
-                    <FlatList
-                        data={filteredActors}
-                        renderItem={renderItem}
-                        keyExtractor={(item) => item.id}
-                        contentContainerStyle={{ paddingBottom: 40 }}
-                        showsVerticalScrollIndicator={false}
+        <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+            {/* Search Bar */}
+            <View className="px-5 py-3 border-b border-silver-100 bg-white">
+                <View className="flex-row items-center bg-silver-50 rounded-2xl px-4 py-2 border border-silver-100">
+                    <Ionicons name="search" size={20} color="#AEAEB2" />
+                    <TextInput
+                        className="flex-1 ml-3 h-10 text-base text-black"
+                        placeholder="Search by name or email..."
+                        value={searchQuery}
+                        onChangeText={handleSearch}
+                        autoCorrect={false}
                     />
-                )}
-            </SafeAreaView>
+                    {searchQuery.length > 0 && (
+                        <TouchableOpacity onPress={() => handleSearch('')}>
+                            <Ionicons name="close-circle" size={20} color="#AEAEB2" />
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </View>
+
+            {isLoading ? (
+                <View className="flex-1 items-center justify-center">
+                    <ActivityIndicator color="#000" />
+                </View>
+            ) : filteredActors.length === 0 ? (
+                <View className="flex-1 items-center justify-center px-10">
+                    <Text className="text-lg font-bold text-black mb-2">No users found</Text>
+                    <Text className="text-base text-brand-secondary text-center">
+                        Could not find any users matching your search.
+                    </Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={filteredActors}
+                    renderItem={renderItem}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={{ paddingBottom: 40 }}
+                    showsVerticalScrollIndicator={false}
+                />
+            )}
         </View>
     );
 }

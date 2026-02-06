@@ -4,9 +4,9 @@ import {
     Text,
     FlatList,
     TouchableOpacity,
-    SafeAreaView,
     RefreshControl
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNodes } from '../hooks/useNodes';
 import { SecureImage } from '../components/SecureImage';
 import { Node } from '../types';
@@ -39,6 +39,7 @@ function CollectionCard({ node }: { node: Node }) {
 
 export function CollectionsScreen() {
     const navigation = useNavigation();
+    const insets = useSafeAreaInsets();
     const { nodes, isLoading, sync } = useNodes();
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -56,7 +57,7 @@ export function CollectionsScreen() {
     const collectionNodes = nodes.filter(n => n.nodetype === 'collection');
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
+        <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
             <View className="px-6 pt-6 pb-2 mb-4">
                 <View className="flex-row justify-between items-center">
                     <Text className="text-4xl font-bold text-black tracking-tighter">Collections</Text>
@@ -90,6 +91,6 @@ export function CollectionsScreen() {
                     </View>
                 }
             />
-        </SafeAreaView>
+        </View>
     );
 }

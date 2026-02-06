@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, SafeAreaView, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { SecureImage } from '../components/SecureImage';
@@ -20,6 +21,7 @@ interface CartEvent {
 export function CartScreen() {
     const { user, db } = useAuth();
     const navigation = useNavigation<any>();
+    const insets = useSafeAreaInsets();
     const [cartItems, setCartItems] = useState<CartEvent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -68,21 +70,24 @@ export function CartScreen() {
             .join(', ');
 
         return (
-            <View className="flex-row items-center py-5 border-b border-silver-100">
+            <View className="flex-row items-center py-6 border-b border-silver-100">
                 <SecureImage
                     source={{ uri: payload.image || '' }}
                     className="w-20 h-20 rounded-2xl bg-silver-50"
                     fallbackComponent={<View className="w-20 h-20 rounded-2xl bg-silver-100" />}
                 />
-                <View className="flex-1 ml-4 justify-center">
-                    <Text className="text-base font-bold text-black" numberOfLines={1}>{payload.name}</Text>
+                <View className="flex-1 ml-4">
+                    <Text className="text-lg font-bold text-black" numberOfLines={1}>{payload.name}</Text>
                     {optionsString ? (
-                        <Text className="text-[13px] text-brand-secondary mt-1" numberOfLines={1}>{optionsString}</Text>
+                        <Text className="text-[13px] text-brand-secondary mt-0.5 leading-4" numberOfLines={2}>{optionsString}</Text>
                     ) : null}
                     <View className="flex-row items-center justify-between mt-3">
-                        <Text className="text-sm font-semibold text-black">Qty: {item.delta}</Text>
-                        <TouchableOpacity onPress={() => handleRemoveItem(item.id)}>
-                            <Text className="text-sm text-red-500 font-bold">Remove</Text>
+                        <Text className="text-[14px] font-bold text-black">Qty: {item.delta}</Text>
+                        <TouchableOpacity
+                            onPress={() => handleRemoveItem(item.id)}
+                            activeOpacity={0.7}
+                        >
+                            <Text className="text-[13px] text-red-500 font-bold uppercase tracking-wider">Remove</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -92,21 +97,21 @@ export function CartScreen() {
 
     if (isLoading && cartItems.length === 0) {
         return (
-            <SafeAreaView className="flex-1 bg-white">
-                <View className="px-5 pt-4 pb-5">
-                    <Text className="text-4xl font-bold text-black tracking-tight">Cart</Text>
+            <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+                <View className="px-6 pt-4 pb-4">
+                    <Text className="text-4xl font-bold text-black tracking-tighter">Cart</Text>
                 </View>
                 <View className="flex-1 justify-center items-center">
-                    <ActivityIndicator color="#000" />
+                    <ActivityIndicator color="#004c8c" />
                 </View>
-            </SafeAreaView>
+            </View>
         );
     }
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
-            <View className="px-5 pt-4 pb-5">
-                <Text className="text-4xl font-bold text-black tracking-tight">Cart</Text>
+        <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+            <View className="px-6 pt-4 pb-4">
+                <Text className="text-4xl font-bold text-black tracking-tighter">Cart</Text>
             </View>
 
             {cartItems.length === 0 ? (
@@ -122,26 +127,32 @@ export function CartScreen() {
                     data={cartItems}
                     renderItem={renderItem}
                     keyExtractor={(item) => item.id}
-                    contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
+                    contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 150 }}
                     showsVerticalScrollIndicator={false}
                 />
             )}
 
             {cartItems.length > 0 && (
-                <View className="p-6 border-t border-silver-100 bg-white" style={{ paddingBottom: 110 }}>
+                <View
+                    className="p-6 border-t border-silver-100 bg-white"
+                    style={{ paddingBottom: Math.max(insets.bottom, 140) }}
+                >
                     <View className="flex-row justify-between items-center mb-6">
-                        <Text className="text-base font-semibold text-brand-secondary">Total Items</Text>
+                        <Text className="text-[15px] font-semibold text-brand-secondary">Total Items</Text>
                         <Text className="text-2xl font-bold text-black">
                             {cartItems.reduce((acc, item) => acc + item.delta, 0)}
                         </Text>
                     </View>
-                    <Button
-                        label="Order Now"
+                    <TouchableOpacity
                         onPress={handleCheckout}
-                        size="lg"
-                    />
+                        style={{ backgroundColor: '#004c8c' }}
+                        activeOpacity={0.8}
+                        className="h-14 rounded-2xl items-center justify-center shadow-lg"
+                    >
+                        <Text className="text-white text-[15px] font-bold uppercase tracking-widest">Order Now</Text>
+                    </TouchableOpacity>
                 </View>
             )}
-        </SafeAreaView>
+        </View>
     );
 }

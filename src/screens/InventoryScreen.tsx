@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, ActivityIndicator, TextInput, Alert, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, TextInput, Alert, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
@@ -27,6 +28,7 @@ interface InventoryItem {
 
 export function InventoryScreen() {
     const navigation = useNavigation();
+    const insets = useSafeAreaInsets();
     const { db, user } = useAuth();
     const { nodes } = useNodes();
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -136,12 +138,12 @@ export function InventoryScreen() {
     );
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.text} />
+                    <Ionicons name="chevron-back" size={24} color={Colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Inventory</Text>
+                <Text style={[styles.title, { letterSpacing: -1 }]}>Inventory</Text>
             </View>
 
             {isLoading ? (
@@ -204,7 +206,7 @@ export function InventoryScreen() {
                     </View>
                 </KeyboardAvoidingView>
             </Modal>
-        </SafeAreaView>
+        </View>
     );
 }
 

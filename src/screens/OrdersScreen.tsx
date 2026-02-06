@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, SafeAreaView, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,6 +25,7 @@ const STATUS_MAP: Record<number, { label: string; color: string; bgColor: string
 
 export function OrdersScreen() {
     const navigation = useNavigation();
+    const insets = useSafeAreaInsets();
     const { db, user, isAdmin } = useAuth();
     const [orders, setOrders] = useState<OrderStream[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -140,8 +142,8 @@ export function OrdersScreen() {
     };
 
     return (
-        <View className="flex-1 bg-white">
-            <SafeAreaView className="flex-1">
+        <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+            <View className="flex-1">
                 {/* Header */}
                 <View className="px-6 pt-6 pb-2 flex-row items-center justify-between">
                     <View className="flex-row items-center">
@@ -184,7 +186,7 @@ export function OrdersScreen() {
                         showsVerticalScrollIndicator={false}
                     />
                 )}
-            </SafeAreaView>
+            </View>
         </View>
     );
 }

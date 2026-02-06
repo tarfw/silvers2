@@ -30,7 +30,8 @@ export function ProductDetailsScreen() {
 
     const [quantity, setQuantity] = useState(1);
     const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
-    const [showSuccess, setShowSuccess] = useState(false);
+    const [isAdded, setIsAdded] = useState(false);
+    const [isAdding, setIsAdding] = useState(false);
 
     const payload = product.payload as any;
     const imageUrl = payload?.image;
@@ -48,6 +49,7 @@ export function ProductDetailsScreen() {
             ...prev,
             [group]: optionId
         }));
+        setIsAdded(false);
     };
 
     const handleAddToCart = async () => {
@@ -64,6 +66,7 @@ export function ProductDetailsScreen() {
             }
         }
 
+        setIsAdding(true);
         const selectedOptionsText = Object.entries(selectedOptions).reduce((acc, [group, id]) => {
             acc[group] = nodeMap.get(id) || id;
             return acc;
@@ -94,11 +97,12 @@ export function ProductDetailsScreen() {
                 eventId, orderId, opcode, user.id, quantity, eventPayload, 'cart', new Date().toISOString()
             ]);
 
-            setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 1500);
+            setIsAdded(true);
         } catch (error) {
             console.error('Add to cart error:', error);
             Alert.alert('Error', 'Failed to add to cart');
+        } finally {
+            setIsAdding(false);
         }
     };
 
@@ -185,11 +189,13 @@ export function ProductDetailsScreen() {
                 className="absolute bottom-0 left-0 right-0 bg-white border-t border-silver-100 px-6 py-4 shadow-lg"
                 style={{ paddingBottom: insets.bottom + 10 }}
             >
-                <View className="flex-row items-center gap-4">
+                <View className="flex-row items-center gap-3">
                     {/* Quantity Stepper */}
                     <View className="flex-row items-center bg-silver-50 rounded-full h-14 px-1 border border-silver-200">
                         <TouchableOpacity
-                            onPress={() => setQuantity(Math.max(1, quantity - 1))}
+                            onPress={() => {
+                                setQuantity(Math.max(1, quantity - 1));
+                            }}
                             className="w-11 h-full items-center justify-center"
                         >
                             <Ionicons name="remove" size={20} color={quantity > 1 ? "black" : "#C7C7CC"} />
@@ -200,7 +206,9 @@ export function ProductDetailsScreen() {
                         </View>
 
                         <TouchableOpacity
-                            onPress={() => setQuantity(quantity + 1)}
+                            onPress={() => {
+                                setQuantity(quantity + 1);
+                            }}
                             className="w-11 h-full items-center justify-center"
                         >
                             <Ionicons name="add" size={20} color="black" />
@@ -210,24 +218,26 @@ export function ProductDetailsScreen() {
                     {/* Add to Cart Button */}
                     <TouchableOpacity
                         onPress={handleAddToCart}
-                        disabled={showSuccess}
+                        disabled={isAdding}
                         activeOpacity={0.8}
-                        style={{ backgroundColor: showSuccess ? '#16a34a' : '#004c8c' }}
+                        style={{ backgroundColor: isAdding ? '#E5E5EA' : '#004c8c' }}
                         className="flex-1 h-14 rounded-full items-center justify-center shadow-sm flex-row"
                     >
-                        {showSuccess ? (
-                            <>
-                                <Ionicons name="checkmark" size={24} color="white" style={{ marginRight: 8 }} />
-                                <Text className="text-white text-[16px] font-bold uppercase tracking-wider">
-                                    Added
-                                </Text>
-                            </>
-                        ) : (
-                            <Text className="text-white text-[16px] font-bold uppercase tracking-wider">
-                                Add to Cart
-                            </Text>
-                        )}
+                        <Text className="text-white text-[15px] font-bold uppercase tracking-wider">
+                            {isAdding ? 'Adding...' : 'Add to Cart'}
+                        </Text>
                     </TouchableOpacity>
+
+                    {/* Go to Cart - Secondary Action */}
+                    {isAdded && (
+                        <TouchableOpacity
+                            onPress={() => (navigation as any).navigate('MainTabs', { screen: 'Cart' })}
+                            className="w-14 h-14 rounded-full bg-silver-100 items-center justify-center border border-silver-200"
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="cart" size={24} color="#004c8c" />
+                        </TouchableOpacity>
+                    )}
                 </View>
             </View>
         </View>

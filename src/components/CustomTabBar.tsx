@@ -80,7 +80,7 @@ export function CustomTabBar({ state, descriptors, navigation }: any) {
                         const getIcon = (name: string, focused: boolean) => {
                             switch (name) {
                                 case 'Home': return focused ? 'storefront' : 'storefront-outline';
-                                case 'Collections': return focused ? 'search' : 'search-outline';
+                                case 'Collections': return focused ? 'albums' : 'albums-outline';
                                 case 'Cart': return focused ? 'cart' : 'cart-outline';
                                 case 'Menu': return focused ? 'grid' : 'grid-outline';
                                 default: return 'square';

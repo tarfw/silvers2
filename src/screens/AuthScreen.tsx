@@ -6,9 +6,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -27,6 +27,7 @@ export function AuthScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   const handleSubmit = useCallback(async () => {
     if (!email || !password) {
@@ -65,7 +66,7 @@ export function AuthScreen() {
   const isFormValid = email.length > 0 && password.length >= 6;
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: JEWEL_BLUE_BG }}>
+    <View className="flex-1" style={{ backgroundColor: JEWEL_BLUE_BG, paddingTop: insets.top }}>
       <StatusBar style="light" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -166,6 +167,6 @@ export function AuthScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }

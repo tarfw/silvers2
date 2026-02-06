@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, SafeAreaView, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
@@ -10,6 +11,7 @@ import { Input } from '../components/ui/Input';
 export function AddressesScreen() {
     const { user, db } = useAuth();
     const navigation = useNavigation<any>();
+    const insets = useSafeAreaInsets();
 
     const [addressHistory, setAddressHistory] = useState<any[]>([]);
     const [newAddress, setNewAddress] = useState('');
@@ -79,8 +81,8 @@ export function AddressesScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
-            <View className="flex-row items-center px-5 pt-4 pb-5">
+        <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+            <View className="flex-row items-center px-6 pt-4 pb-5">
                 <TouchableOpacity onPress={() => navigation.goBack()} className="mr-4">
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
@@ -141,6 +143,6 @@ export function AddressesScreen() {
                     </View>
                 )}
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 }

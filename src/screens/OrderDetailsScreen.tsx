@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, SafeAreaView, TouchableOpacity, ActivityIndicator, ScrollView, Alert, BackHandler, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Alert, BackHandler, Modal } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,6 +26,7 @@ const STATUS_MAP: Record<number, { label: string; color: string; icon: string }>
 export function OrderDetailsScreen() {
     const navigation = useNavigation();
     const route = useRoute<any>();
+    const insets = useSafeAreaInsets();
     const { streamId } = route.params;
     const { db, user } = useAuth();
 
@@ -50,7 +52,7 @@ export function OrderDetailsScreen() {
             const latestStatus = allEvents.find(e => e.opcode >= 501 && e.opcode <= 505);
 
             const streamInfo = await db.all(
-                'SELECT a.name, a.globalcode as email FROM streams s LEFT JOIN actors a ON s.createdby = a.id WHERE s.id = ?',
+                'SELECT a.name, a.globalcode as email FROM streamcollab sc JOIN actors a ON sc.actorid = a.id WHERE sc.streamid = ? AND sc.role = "owner"',
                 [streamId]
             ) as any[];
 
@@ -142,11 +144,11 @@ export function OrderDetailsScreen() {
 
     if (isLoading) {
         return (
-            <SafeAreaView className="flex-1 bg-white">
+            <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
                 <View className="flex-1 justify-center items-center">
-                    <ActivityIndicator color="#000" />
+                    <ActivityIndicator color="#004c8c" />
                 </View>
-            </SafeAreaView>
+            </View>
         );
     }
 
@@ -155,10 +157,10 @@ export function OrderDetailsScreen() {
     const statusInfo = STATUS_MAP[currentStatus];
 
     return (
-        <View className="flex-1 bg-white">
-            <SafeAreaView className="flex-1">
+        <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+            <View className="flex-1">
                 {/* Minimal Header */}
-                <View className="px-6 pt-4 pb-6 flex-row items-center justify-between border-b border-silver-50">
+                <View className="px-6 pt-6 pb-6 flex-row items-center justify-between border-b border-silver-50">
                     <TouchableOpacity
                         onPress={() => {
                             if (route.params?.justPlaced) {
@@ -167,22 +169,22 @@ export function OrderDetailsScreen() {
                                 navigation.goBack();
                             }
                         }}
-                        className="w-11 h-11 items-center justify-center bg-white rounded-full border border-silver-100 shadow-sm"
+                        className="w-10 h-10 items-center justify-center bg-white rounded-full border border-silver-100 shadow-sm"
                     >
                         <Ionicons name="chevron-back" size={20} color="#000" />
                     </TouchableOpacity>
 
                     <View className="items-end">
-                        <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2.5px]">Digital Receipt / Order</Text>
-                        <Text className="text-xl font-bold text-black tracking-tighter">#{orderNum}</Text>
+                        <Text className="text-[9px] font-bold text-brand-secondary uppercase tracking-[2px]">Digital Receipt / Order</Text>
+                        <Text className="text-lg font-bold text-black tracking-tight" numberOfLines={1}>#{orderNum}</Text>
                     </View>
                 </View>
 
                 {/* Floating Notification */}
                 {showSuccessBar && (
-                    <View className="absolute top-24 left-6 right-6 z-[60] bg-black/90 flex-row items-center px-6 py-5 rounded-[24px] shadow-2xl">
-                        <Ionicons name="receipt" size={18} color="#FFF" />
-                        <Text className="text-white text-[13px] font-bold flex-1 ml-4 uppercase tracking-widest">Order Logged Successfully</Text>
+                    <View className="absolute top-[160px] left-6 right-6 z-[60] bg-[#004c8c] flex-row items-center px-6 py-4 rounded-2xl shadow-xl">
+                        <Ionicons name="checkmark-circle" size={18} color="#FFF" />
+                        <Text className="text-white text-[12px] font-bold flex-1 ml-3 uppercase tracking-wider">Success: Order Logged</Text>
                         <TouchableOpacity onPress={() => setShowSuccessBar(false)}>
                             <Ionicons name="close" size={18} color="#FFF" />
                         </TouchableOpacity>
@@ -220,19 +222,19 @@ export function OrderDetailsScreen() {
                     {/* Parties Section */}
                     <View className="mb-14">
                         <View className="mb-10">
-                            <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2.5px] mb-4">Customer Details</Text>
+                            <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2px] mb-3">Customer Details</Text>
                             {creatorDetails && (
                                 <View>
-                                    <Text className="text-2xl font-bold text-black tracking-tight">{creatorDetails.name}</Text>
-                                    <Text className="text-[13px] font-medium text-brand-secondary mt-1">{creatorDetails.email}</Text>
+                                    <Text className="text-xl font-bold text-black tracking-tight">{creatorDetails.name}</Text>
+                                    <Text className="text-[13px] font-medium text-brand-secondary mt-0.5">{creatorDetails.email}</Text>
                                 </View>
                             )}
                         </View>
 
                         {shippingAddress && (
                             <View className="pt-8 border-t border-silver-100">
-                                <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2.5px] mb-4">Delivery Address</Text>
-                                <Text className="text-[15px] font-semibold text-black leading-6">
+                                <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2px] mb-3">Delivery Address</Text>
+                                <Text className="text-[16px] font-bold text-black leading-6">
                                     {shippingAddress}
                                 </Text>
                             </View>
@@ -241,8 +243,8 @@ export function OrderDetailsScreen() {
 
                     {/* Breakdown Header */}
                     <View className="flex-row pb-4 border-b-2 border-black/5 mb-2">
-                        <Text className="flex-1 text-[10px] font-bold text-brand-secondary uppercase tracking-[2.5px]">Line Items</Text>
-                        <Text className="w-16 text-[10px] font-bold text-brand-secondary uppercase tracking-[2.5px] text-right">Unit QTY</Text>
+                        <Text className="flex-1 text-[10px] font-bold text-brand-secondary uppercase tracking-[2px]">Line Items</Text>
+                        <Text className="w-16 text-[10px] font-bold text-brand-secondary uppercase tracking-[2px] text-right">Unit QTY</Text>
                     </View>
 
                     {items.map((item, index) => {
@@ -266,7 +268,7 @@ export function OrderDetailsScreen() {
                                     </View>
                                 </View>
                                 <View className="w-16 items-end justify-center">
-                                    <Text className="text-lg font-bold text-black">
+                                    <Text className="text-[16px] font-bold text-black">
                                         {item.delta}
                                     </Text>
                                 </View>
@@ -274,7 +276,7 @@ export function OrderDetailsScreen() {
                         );
                     })}
                 </ScrollView>
-            </SafeAreaView>
+            </View>
 
             {/* Fulfillment Status Bottom Drawer */}
             <Modal
@@ -289,7 +291,10 @@ export function OrderDetailsScreen() {
                         activeOpacity={1}
                         onPress={() => setIsStatusDrawerVisible(false)}
                     />
-                    <View className="bg-white rounded-t-[40px] px-8 pt-4 pb-12 shadow-2xl">
+                    <View
+                        className="bg-white rounded-t-[40px] px-8 pt-4 pb-12 shadow-2xl"
+                        style={{ paddingBottom: Math.max(insets.bottom, 40) }}
+                    >
                         <View className="w-12 h-1 bg-silver-100 rounded-full self-center mb-10" />
 
                         <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[3px] mb-8 text-center">Fulfillment Status</Text>

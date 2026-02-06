@@ -1,17 +1,19 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
 export function ProfileScreen() {
     const { signOut, user } = useAuth();
+    const insets = useSafeAreaInsets();
 
     const initials = user?.email?.charAt(0).toUpperCase() || 'U';
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
-            <View className="px-5 pt-4 pb-5">
-                <Text className="text-4xl font-bold text-black tracking-tight">Account</Text>
+        <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+            <View className="px-6 pt-4 pb-4">
+                <Text className="text-4xl font-bold text-black tracking-tighter">Account</Text>
             </View>
 
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -63,6 +65,6 @@ export function ProfileScreen() {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 }

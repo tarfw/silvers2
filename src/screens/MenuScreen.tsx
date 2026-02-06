@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNodes } from '../hooks/useNodes';
 import { useAuth } from '../contexts/AuthContext';
-import { Button } from '../components/ui/Button';
 
 const ADMIN_MENU_GROUPS = [
     {
@@ -26,7 +26,6 @@ const ADMIN_MENU_GROUPS = [
         title: 'System',
         items: [
             { id: 'profile', title: 'Profile', iconName: 'person-outline' as const, screen: 'Profile' },
-            { id: 'settings', title: 'Settings', iconName: 'settings-outline' as const, screen: 'Settings' },
         ]
     }
 ];
@@ -45,16 +44,11 @@ const USER_MENU_GROUPS = [
             { id: 'addresses', title: 'Addresses', iconName: 'location-outline' as const, screen: 'Addresses' },
         ]
     },
-    {
-        title: 'System',
-        items: [
-            { id: 'settings', title: 'Settings', iconName: 'settings-outline' as const, screen: 'Settings' },
-        ]
-    }
 ];
 
 export function MenuScreen() {
     const navigation = useNavigation<any>();
+    const insets = useSafeAreaInsets();
     const { isAdmin } = useAuth();
     const { isSyncing, pull, push } = useNodes();
     const [isPulling, setIsPulling] = useState(false);
@@ -63,7 +57,7 @@ export function MenuScreen() {
     const menuGroups = isAdmin ? ADMIN_MENU_GROUPS : USER_MENU_GROUPS;
 
     const handlePress = (screen: string) => {
-        if (['Nodes', 'Orders', 'Reports', 'Inventory', 'Profile', 'Settings', 'MyOrders', 'Addresses'].includes(screen)) {
+        if (['Nodes', 'Orders', 'Reports', 'Inventory', 'Profile', 'MyOrders', 'Addresses'].includes(screen)) {
             navigation.navigate(screen);
         } else if (screen === 'Collections') {
             navigation.navigate('MainTabs', { screen });
@@ -97,11 +91,11 @@ export function MenuScreen() {
     };
 
     return (
-        <View className="flex-1 bg-white">
-            <SafeAreaView className="flex-1">
-                {/* Header */}
-                <View className="px-6 pt-6 pb-2">
-                    <Text className="text-4xl font-bold text-black tracking-tight">Menu</Text>
+        <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+            <View className="flex-1">
+                {/* Header Area */}
+                <View className="px-6 pt-4 pb-4 mb-2">
+                    <Text className="text-4xl font-bold text-black tracking-tighter">Menu</Text>
                 </View>
 
                 <ScrollView
@@ -135,7 +129,7 @@ export function MenuScreen() {
                         </View>
                     ))}
                 </ScrollView>
-            </SafeAreaView>
+            </View>
 
             {/* Bottom Floating Sync Bar */}
             <View className="absolute bottom-32 left-6 right-6">
@@ -176,4 +170,3 @@ export function MenuScreen() {
         </View>
     );
 }
-

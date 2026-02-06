@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,6 +24,7 @@ interface ReportStats {
 
 export function ReportsScreen() {
     const navigation = useNavigation();
+    const insets = useSafeAreaInsets();
     const { db, user } = useAuth();
     const [stats, setStats] = useState<ReportStats | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -80,12 +82,12 @@ export function ReportsScreen() {
     );
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.text} />
+                    <Ionicons name="chevron-back" size={24} color={Colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Reports</Text>
+                <Text style={[styles.title, { letterSpacing: -1 }]}>Sales Reports</Text>
             </View>
 
             {isLoading ? (
@@ -129,7 +131,7 @@ export function ReportsScreen() {
                     </View>
                 </ScrollView>
             )}
-        </SafeAreaView>
+        </View>
     );
 }
 

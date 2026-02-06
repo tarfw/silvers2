@@ -13,7 +13,7 @@ import {
     ActivityIndicator,
     TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNodes } from '../hooks/useNodes';
 import { useAuth } from '../contexts/AuthContext';
@@ -71,6 +71,7 @@ function NodeItem({
 }
 
 export function NodesScreen() {
+    const insets = useSafeAreaInsets();
     const { nodes, isLoading, isSyncing, createNode, updateNode, deleteNode, pull, push, sync } = useNodes();
     const { } = useAuth();
 
@@ -298,14 +299,14 @@ export function NodesScreen() {
     ];
 
     return (
-        <View className="flex-1 bg-white">
-            <SafeAreaView className="flex-1" edges={['top']}>
+        <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+            <View className="flex-1">
                 {/* Modern Header */}
                 <View className="px-6 pt-6 pb-4">
                     <View className="flex-row justify-between items-end mb-6">
                         <View>
                             <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2.5px] mb-1">Catalog Manager</Text>
-                            <Text className="text-4xl font-bold text-black tracking-tighter">All Items</Text>
+                            <Text className="text-4xl font-bold text-black tracking-tighter">All Products</Text>
                         </View>
                         {isSyncing && (
                             <ActivityIndicator size="small" color="#000" />
@@ -397,7 +398,7 @@ export function NodesScreen() {
                         </View>
                     }
                 />
-            </SafeAreaView>
+            </View>
 
             {/* Modern FAB */}
             <TouchableOpacity

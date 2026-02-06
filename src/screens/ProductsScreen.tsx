@@ -4,11 +4,11 @@ import {
     Text,
     FlatList,
     TouchableOpacity,
-    SafeAreaView,
     RefreshControl,
     ScrollView,
     Dimensions,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNodes } from '../hooks/useNodes';
 import { SecureImage } from '../components/SecureImage';
 import { Node } from '../types';
@@ -32,7 +32,7 @@ function ProductCard({ node }: { node: ProductWithPrice }) {
 
     return (
         <TouchableOpacity
-            className="w-[47%] bg-white rounded-[32px] mb-6 overflow-hidden border border-silver-100 shadow-sm"
+            className="w-[47%] bg-white rounded-[10px] mb-6 overflow-hidden border border-silver-100 shadow-sm"
             activeOpacity={0.9}
             onPress={() => navigation.navigate('ProductDetails', { product: node })}
         >
@@ -58,6 +58,7 @@ function ProductCard({ node }: { node: ProductWithPrice }) {
 
 export function ProductsScreen() {
     const navigation = useNavigation<any>();
+    const insets = useSafeAreaInsets();
     const { nodes, isLoading, sync } = useNodes();
     const { db, user } = useAuth();
     const [products, setProducts] = useState<ProductWithPrice[]>([]);
@@ -118,13 +119,13 @@ export function ProductsScreen() {
     const featuredProducts = products.slice(0, 5);
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
-            <View className="px-6 pt-4 pb-2">
+        <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+            <View className="px-6 pt-2 pb-0">
                 {/* Header Area */}
-                <View className="flex-row justify-between items-center mb-6">
+                <View className="flex-row justify-between items-center mb-4">
                     <View>
-                        <Text className="text-[12px] font-bold text-brand-secondary uppercase tracking-[3px] mb-1">SKJ Silvers</Text>
-                        <Text className="text-4xl font-bold text-black tracking-tighter">Collections</Text>
+                        <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[2px] mb-0.5">SKJ Silvers</Text>
+                        <Text className="text-3xl font-bold text-black tracking-tighter">Collections</Text>
                     </View>
                     <TouchableOpacity
                         onPress={handleRefresh}
@@ -135,13 +136,13 @@ export function ProductsScreen() {
                 </View>
 
                 {/* Search */}
-                <View className="mb-6">
+                <View className="mb-4">
                     <Input
                         placeholder="Search our catalogue..."
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         icon="search"
-                        containerClassName="h-14 rounded-2xl bg-silver-50 border-silver-100"
+                        containerClassName="h-12 rounded-xl bg-silver-50 border-silver-100"
                     />
                 </View>
 
@@ -149,23 +150,29 @@ export function ProductsScreen() {
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    className="mb-6 -mx-6 px-6"
+                    className="mb-4 -mx-6 px-6"
                 >
                     <TouchableOpacity
                         onPress={() => setSelectedCategory(null)}
-                        style={{ backgroundColor: !selectedCategory ? '#004c8c' : '#FFFFFF', borderColor: !selectedCategory ? '#004c8c' : '#E5E5EA' }}
-                        className="mr-3 px-6 py-3 rounded-full border"
+                        style={{
+                            backgroundColor: !selectedCategory ? '#004c8c' : '#F2F2F7',
+                            borderColor: !selectedCategory ? '#004c8c' : '#F2F2F7'
+                        }}
+                        className="mr-3 px-6 py-3 rounded-[20px] border"
                     >
-                        <Text className={`font-bold text-sm ${!selectedCategory ? 'text-white' : 'text-black'}`}>All</Text>
+                        <Text className={`font-bold text-[13px] ${!selectedCategory ? 'text-white' : 'text-[#8E8E93]'}`}>All</Text>
                     </TouchableOpacity>
                     {collections.map(col => (
                         <TouchableOpacity
                             key={col.id}
                             onPress={() => setSelectedCategory(col.id)}
-                            style={{ backgroundColor: selectedCategory === col.id ? '#004c8c' : '#FFFFFF', borderColor: selectedCategory === col.id ? '#004c8c' : '#E5E5EA' }}
-                            className="mr-3 px-6 py-3 rounded-full border"
+                            style={{
+                                backgroundColor: selectedCategory === col.id ? '#004c8c' : '#F2F2F7',
+                                borderColor: selectedCategory === col.id ? '#004c8c' : '#F2F2F7'
+                            }}
+                            className="mr-3 px-6 py-3 rounded-[20px] border"
                         >
-                            <Text className={`font-bold text-sm ${selectedCategory === col.id ? 'text-white' : 'text-black'}`}>
+                            <Text className={`font-bold text-[13px] ${selectedCategory === col.id ? 'text-white' : 'text-[#8E8E93]'}`}>
                                 {col.title}
                             </Text>
                         </TouchableOpacity>
@@ -178,7 +185,7 @@ export function ProductsScreen() {
                 keyExtractor={(item) => item.id}
                 numColumns={2}
                 renderItem={({ item }) => <ProductCard node={item} />}
-                contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 150 }}
+                contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 0, paddingBottom: 220 }}
                 columnWrapperStyle={{ justifyContent: 'space-between' }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
@@ -186,27 +193,56 @@ export function ProductsScreen() {
                 }
                 ListHeaderComponent={
                     !searchQuery && !selectedCategory && featuredProducts.length > 0 ? (
-                        <View className="mb-8">
-                            <Text className="text-xl font-bold text-black mb-4 px-1">Featured Pieces</Text>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-1">
+                        <View className="mb-6">
+                            <View className="flex-row items-center justify-between mb-4 px-1">
+                                <Text className="text-xl font-bold text-black tracking-tight">Featured Pieces</Text>
+                                <TouchableOpacity>
+                                    <Text className="text-[12px] font-bold text-[#004c8c] uppercase tracking-wider">See All</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                className="-mx-6 px-6"
+                                decelerationRate="fast"
+                                snapToInterval={width * 0.72 + 16}
+                                snapToAlignment="start"
+                            >
                                 {featuredProducts.map(p => (
                                     <TouchableOpacity
                                         key={p.id}
                                         onPress={() => (navigation as any).navigate('ProductDetails', { product: p })}
-                                        className="mr-4 w-56 bg-silver-50 rounded-[32px] overflow-hidden border border-silver-100"
+                                        style={{ width: width * 0.72 }}
+                                        className="mr-4 bg-white rounded-[10px] overflow-hidden border border-silver-100 shadow-sm"
+                                        activeOpacity={0.9}
                                     >
-                                        <SecureImage
-                                            source={{ uri: (p.payload as any)?.image }}
-                                            style={{ aspectRatio: 1 }}
-                                            className="w-full"
-                                        />
-                                        <View className="p-4">
-                                            <Text className="text-base font-bold text-black" numberOfLines={1}>{p.title}</Text>
+                                        <View className="relative">
+                                            <SecureImage
+                                                source={{ uri: (p.payload as any)?.image }}
+                                                style={{ aspectRatio: 1 }}
+                                                className="w-full bg-silver-50"
+                                            />
+                                            <View
+                                                style={{ backgroundColor: '#004c8c' }}
+                                                className="absolute top-5 left-5 px-3 py-1.5 shadow-lg"
+                                            >
+                                                <Text className="text-[10px] font-bold text-white uppercase tracking-widest">New Arrival</Text>
+                                            </View>
+                                        </View>
+                                        <View className="p-6">
+                                            <Text className="text-lg font-bold text-black mb-1" numberOfLines={1}>{p.title}</Text>
+                                            <Text className="text-[12px] font-bold text-brand-secondary uppercase tracking-[1px]">Limited Collection</Text>
                                         </View>
                                     </TouchableOpacity>
                                 ))}
+                                <View className="w-6" />
                             </ScrollView>
-                            <Text className="text-xl font-bold text-black mt-10 mb-4 px-1">Explore All</Text>
+
+                            <View className="mt-8 mb-4 px-1">
+                                <Text className="text-xl font-bold text-black tracking-tight">Explore Catalogue</Text>
+                                <Text className="text-[12px] font-medium text-brand-secondary mt-0.5">Discover our classic silver essentials</Text>
+                            </View>
                         </View>
                     ) : null
                 }
@@ -222,6 +258,6 @@ export function ProductsScreen() {
                     </View>
                 }
             />
-        </SafeAreaView>
+        </View>
     );
 }
