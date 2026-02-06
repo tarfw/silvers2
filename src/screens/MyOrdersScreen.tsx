@@ -22,9 +22,9 @@ const STATUS_MAP: Record<number, { label: string; color: string; bgColor: string
     505: { label: 'Cancelled', color: '#FF3B30', bgColor: '#FFEBEE' },
 };
 
-export function OrdersScreen() {
+export function MyOrdersScreen() {
     const navigation = useNavigation();
-    const { db, user, isAdmin } = useAuth();
+    const { db, user } = useAuth();
     const [orders, setOrders] = useState<OrderStream[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -33,26 +33,15 @@ export function OrdersScreen() {
         setIsLoading(true);
 
         try {
-            const query = isAdmin
-                ? `
-                    SELECT s.id, s.createdat, a.name as creatorName, a.globalcode as creatorEmail,
-                           (SELECT a2.name FROM streamcollab sc2 JOIN actors a2 ON sc2.actorid = a2.id WHERE sc2.streamid = s.id AND sc2.role = 'owner' LIMIT 1) as customerName
-                    FROM streams s
-                    LEFT JOIN actors a ON s.createdby = a.id
-                    WHERE s.scope = 'order'
-                    ORDER BY s.createdat DESC
-                `
-                : `
-                    SELECT s.id, s.createdat, a.name as creatorName, a.globalcode as creatorEmail
-                    FROM streams s
-                    JOIN streamcollab sc ON s.id = sc.streamid
-                    LEFT JOIN actors a ON s.createdby = a.id
-                    WHERE s.scope = 'order' AND sc.actorid = ?
-                    ORDER BY s.createdat DESC
-                `;
-
-            const params = isAdmin ? [] : [user.id];
-            const streams = await db.all(query, params) as any[];
+            // Filter strictly by the current user's role in the stream
+            const streams = await db.all(`
+                SELECT s.id, s.createdat, a.name as creatorName, a.globalcode as creatorEmail
+                FROM streams s
+                JOIN streamcollab sc ON s.id = sc.streamid
+                LEFT JOIN actors a ON s.createdby = a.id
+                WHERE s.scope = 'order' AND sc.actorid = ?
+                ORDER BY s.createdat DESC
+            `, [user.id]) as any[];
 
             const orderData: OrderStream[] = [];
 
@@ -70,14 +59,14 @@ export function OrdersScreen() {
                     itemCount: events[0]?.itemCount || 0,
                     totalQty: events[0]?.totalQty || 0,
                     statusOpcode: events[0]?.statusOpcode || 501,
-                    creatorName: stream.customerName || stream.creatorName || 'Unknown',
+                    creatorName: stream.creatorName || 'Unknown',
                     creatorEmail: stream.creatorEmail || ''
                 });
             }
 
             setOrders(orderData);
         } catch (error) {
-            console.error('Error loading orders:', error);
+            console.error('Error loading my orders:', error);
         } finally {
             setIsLoading(false);
         }
@@ -127,8 +116,8 @@ export function OrdersScreen() {
 
                 <View className="flex-row justify-between items-center">
                     <View>
-                        <Text className="text-[12px] font-semibold text-brand-secondary mb-1">Ordered by</Text>
-                        <Text className="text-[14px] font-bold text-black">{item.creatorName}</Text>
+                        <Text className="text-[12px] font-semibold text-brand-secondary mb-1">Created on</Text>
+                        <Text className="text-[14px] font-bold text-black">{date}</Text>
                     </View>
                     <View className="items-end">
                         <Text className="text-[12px] font-semibold text-brand-secondary mb-1">{item.itemCount} {item.itemCount === 1 ? 'Item' : 'Items'}</Text>
@@ -151,7 +140,7 @@ export function OrdersScreen() {
                         >
                             <Ionicons name="chevron-back" size={20} color="#000" />
                         </TouchableOpacity>
-                        <Text className="text-3xl font-bold text-black tracking-tight leading-tight">Orders</Text>
+                        <Text className="text-3xl font-bold text-black tracking-tight leading-tight">My Orders</Text>
                     </View>
                     <TouchableOpacity
                         onPress={loadOrders}
@@ -172,7 +161,7 @@ export function OrdersScreen() {
                         </View>
                         <Text className="text-xl font-bold text-black mb-2">No orders yet</Text>
                         <Text className="text-base text-brand-secondary text-center leading-6">
-                            Your purchase history will appear here once you place your first order.
+                            Once you place an order, it will appear here.
                         </Text>
                     </View>
                 ) : (

@@ -11,6 +11,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -134,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       db,
       isLoading,
       isAuthenticated: !!user,
+      isAdmin: user?.email === 'skjsilverssmith@gmail.com',
       signIn,
       signUp,
       signOut,

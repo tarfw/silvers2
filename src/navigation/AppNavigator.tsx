@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ProductsScreen } from '../screens/ProductsScreen';
@@ -15,21 +15,18 @@ import { InventoryScreen } from '../screens/InventoryScreen';
 import { OrderDetailsScreen } from '../screens/OrderDetailsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { CheckoutAddressScreen } from '../screens/CheckoutAddressScreen';
+import { MyOrdersScreen } from '../screens/MyOrdersScreen';
+import { ActorsScreen } from '../screens/ActorsScreen';
+import { AddressesScreen } from '../screens/AddressesScreen';
 
-
-import { Ionicons } from '@expo/vector-icons';
-
-import { Platform, StyleSheet } from 'react-native';
-
-const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
-
-import { BlurView } from 'expo-blur';
 import { cssInterop } from 'nativewind';
+import { BlurView } from 'expo-blur';
+import { CustomTabBar } from '../components/CustomTabBar';
 
 cssInterop(BlurView, { className: "style" });
 
-import { CustomTabBar } from '../components/CustomTabBar';
+const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
 function TabNavigator() {
     return (
@@ -46,10 +43,6 @@ function TabNavigator() {
         </Tab.Navigator>
     );
 }
-
-const styles = StyleSheet.create({
-    // Simplified styles, iconWrapper removed to allow natural centering
-});
 
 export function AppNavigator() {
     return (
@@ -86,7 +79,19 @@ export function AppNavigator() {
                     headerStyle: { backgroundColor: '#FFFFFF' },
                 }}
             />
-
+            <Stack.Screen name="MyOrders" component={MyOrdersScreen} />
+            <Stack.Screen
+                name="Actors"
+                component={ActorsScreen}
+                options={{
+                    headerShown: true,
+                    headerTitle: 'Select Customer',
+                    headerBackTitle: 'Back',
+                    headerShadowVisible: false,
+                    headerStyle: { backgroundColor: '#FFFFFF' },
+                }}
+            />
+            <Stack.Screen name="Addresses" component={AddressesScreen} />
         </Stack.Navigator>
     );
 }

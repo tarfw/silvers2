@@ -8,10 +8,10 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 
 export function CheckoutAddressScreen() {
-    const { user, db } = useAuth();
+    const { user, db, isAdmin } = useAuth();
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
-    const { cartItems } = route.params;
+    const { cartItems, selectedActor } = route.params || {};
 
     const [addressHistory, setAddressHistory] = useState<any[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
@@ -54,6 +54,7 @@ export function CheckoutAddressScreen() {
     const handlePlaceOrder = async () => {
         if (!db || !user || isProcessing) return;
 
+        const customerId = (isAdmin && selectedActor) ? selectedActor.id : user.id;
         const finalAddressText = isAddingNew ? newAddress.trim() : addressHistory.find(a => a.id === selectedAddressId)?.text;
 
         if (!finalAddressText) {
@@ -75,7 +76,7 @@ export function CheckoutAddressScreen() {
             await db.run(`
                 INSERT INTO streamcollab (streamid, actorid, role, joinedat)
                 VALUES (?, ?, ?, ?)
-            `, [orderId, user.id, 'owner', timestamp]);
+            `, [orderId, customerId, 'owner', timestamp]);
 
             for (const item of cartItems) {
                 const eventId = generateShortId();
@@ -86,7 +87,7 @@ export function CheckoutAddressScreen() {
                     eventId,
                     orderId,
                     501,
-                    user.id,
+                    customerId,
                     item.delta,
                     item.payload,
                     'order',
@@ -101,7 +102,7 @@ export function CheckoutAddressScreen() {
                 generateShortId(),
                 orderId,
                 506,
-                user.id,
+                customerId,
                 0,
                 JSON.stringify({ address: finalAddressText }),
                 'order',
@@ -167,6 +168,29 @@ export function CheckoutAddressScreen() {
                 </TouchableOpacity>
                 <Text className="text-2xl font-bold text-black">Shipping</Text>
             </View>
+
+            {isAdmin && (
+                <View className="px-5 mb-4">
+                    <Text className="text-sm font-bold text-brand-secondary uppercase tracking-widest mb-2">Customer</Text>
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('Actors')}
+                        className="flex-row items-center p-4 bg-silver-50 rounded-2xl border border-silver-100"
+                    >
+                        <View className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm border border-silver-50">
+                            <Ionicons name="person-outline" size={20} color="#000" />
+                        </View>
+                        <View className="ml-3 flex-1">
+                            <Text className="text-base font-bold text-black">
+                                {selectedActor ? selectedActor.name : 'Select Customer'}
+                            </Text>
+                            {selectedActor && (
+                                <Text className="text-xs text-brand-secondary">{selectedActor.globalcode}</Text>
+                            )}
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color="#AEAEB2" />
+                    </TouchableOpacity>
+                </View>
+            )}
 
             <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
                 <Text className="text-lg font-semibold text-black mb-6 mt-2">Where should we send your order?</Text>

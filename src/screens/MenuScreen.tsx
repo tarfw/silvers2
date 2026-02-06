@@ -3,9 +3,10 @@ import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'r
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNodes } from '../hooks/useNodes';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 
-const MENU_GROUPS = [
+const ADMIN_MENU_GROUPS = [
     {
         title: 'Commerce',
         items: [
@@ -30,14 +31,39 @@ const MENU_GROUPS = [
     }
 ];
 
+const USER_MENU_GROUPS = [
+    {
+        title: 'My Activities',
+        items: [
+            { id: 'myorders', title: 'My Orders', iconName: 'receipt-outline' as const, screen: 'MyOrders' },
+        ]
+    },
+    {
+        title: 'Account',
+        items: [
+            { id: 'profile', title: 'Profile', iconName: 'person-outline' as const, screen: 'Profile' },
+            { id: 'addresses', title: 'Addresses', iconName: 'location-outline' as const, screen: 'Addresses' },
+        ]
+    },
+    {
+        title: 'System',
+        items: [
+            { id: 'settings', title: 'Settings', iconName: 'settings-outline' as const, screen: 'Settings' },
+        ]
+    }
+];
+
 export function MenuScreen() {
     const navigation = useNavigation<any>();
+    const { isAdmin } = useAuth();
     const { isSyncing, pull, push } = useNodes();
     const [isPulling, setIsPulling] = useState(false);
     const [isPushing, setIsPushing] = useState(false);
 
+    const menuGroups = isAdmin ? ADMIN_MENU_GROUPS : USER_MENU_GROUPS;
+
     const handlePress = (screen: string) => {
-        if (['Nodes', 'Orders', 'Reports', 'Inventory', 'Profile', 'Settings'].includes(screen)) {
+        if (['Nodes', 'Orders', 'Reports', 'Inventory', 'Profile', 'Settings', 'MyOrders', 'Addresses'].includes(screen)) {
             navigation.navigate(screen);
         } else if (screen === 'Collections') {
             navigation.navigate('MainTabs', { screen });
@@ -83,7 +109,7 @@ export function MenuScreen() {
                     contentContainerStyle={{ paddingBottom: 180, paddingHorizontal: 24 }}
                     showsVerticalScrollIndicator={false}
                 >
-                    {MENU_GROUPS.map((group) => (
+                    {menuGroups.map((group) => (
                         <View key={group.title} className="mt-8">
                             <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4 ml-1">
                                 {group.title}

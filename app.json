@@ -2,7 +2,7 @@
   "expo": {
     "name": "Silvers",
     "slug": "silvers",
-    "version": "1.0.0",
+    "version": "2.0.3",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
@@ -10,13 +10,15 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.wetar5.silvers"
+      "bundleIdentifier": "com.wetar5.silvers",
+      "buildNumber": "3"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       },
-      "package": "com.wetar5.silvers"
+      "package": "com.wetar5.silvers",
+      "versionCode": 3
     },
     "plugins": [
       [
