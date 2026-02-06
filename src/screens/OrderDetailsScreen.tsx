@@ -28,7 +28,7 @@ export function OrderDetailsScreen() {
     const route = useRoute<any>();
     const insets = useSafeAreaInsets();
     const { streamId } = route.params;
-    const { db, user } = useAuth();
+    const { db, user, isAdmin } = useAuth();
 
     const [items, setItems] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -179,20 +179,8 @@ export function OrderDetailsScreen() {
                         <Text className="text-lg font-bold text-black tracking-tight" numberOfLines={1}>#{orderNum}</Text>
                     </View>
                 </View>
-
-                {/* Floating Notification */}
-                {showSuccessBar && (
-                    <View className="absolute top-[160px] left-6 right-6 z-[60] bg-[#004c8c] flex-row items-center px-6 py-4 rounded-2xl shadow-xl">
-                        <Ionicons name="checkmark-circle" size={18} color="#FFF" />
-                        <Text className="text-white text-[12px] font-bold flex-1 ml-3 uppercase tracking-wider">Success: Order Logged</Text>
-                        <TouchableOpacity onPress={() => setShowSuccessBar(false)}>
-                            <Ionicons name="close" size={18} color="#FFF" />
-                        </TouchableOpacity>
-                    </View>
-                )}
-
                 <ScrollView
-                    contentContainerStyle={{ paddingHorizontal: 28, paddingTop: 40, paddingBottom: 140 }}
+                    contentContainerStyle={{ paddingHorizontal: 28, paddingTop: 40, paddingBottom: 160 }}
                     showsVerticalScrollIndicator={false}
                     className="flex-1"
                 >
@@ -207,14 +195,15 @@ export function OrderDetailsScreen() {
                         <View className="items-end">
                             <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2.5px] mb-2">Current Stage</Text>
                             <TouchableOpacity
-                                onPress={() => setIsStatusDrawerVisible(true)}
+                                onPress={() => isAdmin && setIsStatusDrawerVisible(true)}
+                                activeOpacity={isAdmin ? 0.7 : 1}
                                 className="px-4 py-1.5 rounded-full border bg-white flex-row items-center"
                                 style={{ borderColor: statusInfo.color }}
                             >
                                 <Text className="text-[10px] font-extrabold uppercase tracking-widest mr-2" style={{ color: statusInfo.color }}>
                                     {statusInfo.label}
                                 </Text>
-                                <Ionicons name="chevron-down" size={12} color={statusInfo.color} />
+                                {isAdmin && <Ionicons name="chevron-down" size={12} color={statusInfo.color} />}
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -276,14 +265,15 @@ export function OrderDetailsScreen() {
                         );
                     })}
                 </ScrollView>
-            </View>
+            </View >
 
             {/* Fulfillment Status Bottom Drawer */}
-            <Modal
+            < Modal
                 visible={isStatusDrawerVisible}
                 animationType="slide"
                 transparent={true}
-                onRequestClose={() => setIsStatusDrawerVisible(false)}
+                onRequestClose={() => setIsStatusDrawerVisible(false)
+                }
             >
                 <View className="flex-1 justify-end">
                     <TouchableOpacity
@@ -335,6 +325,61 @@ export function OrderDetailsScreen() {
                     </View>
                 </View>
             </Modal>
+
+            {/* Guaranteed Bottom Success Bar - Fixed Positioning */}
+            {showSuccessBar && (
+                <View
+                    style={{
+                        position: 'absolute',
+                        bottom: Math.max(insets.bottom, 30),
+                        left: 20,
+                        right: 20,
+                        backgroundColor: '#1C1C1E',
+                        paddingVertical: 18,
+                        paddingHorizontal: 24,
+                        borderRadius: 28,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 10 },
+                        shadowOpacity: 0.4,
+                        shadowRadius: 20,
+                        elevation: 15,
+                        zIndex: 1000,
+                        borderWidth: 1,
+                        borderColor: 'rgba(255,255,255,0.08)'
+                    }}
+                >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                        <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(34, 197, 94, 0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                            <Ionicons name="checkmark" size={20} color="#22C55E" />
+                        </View>
+                        <View style={{ marginLeft: 16 }}>
+                            <Text style={{ fontSize: 9, fontWeight: '800', color: '#AEAEB2', textTransform: 'uppercase', letterSpacing: 2 }}>Order Update</Text>
+                            <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700', letterSpacing: -0.1 }}>Placed successfully</Text>
+                        </View>
+                    </View>
+
+                    <TouchableOpacity
+                        onPress={() => (navigation as any).navigate('MainTabs', { screen: 'Home' })}
+                        activeOpacity={0.8}
+                        style={{
+                            backgroundColor: '#FFFFFF',
+                            paddingHorizontal: 20,
+                            paddingVertical: 12,
+                            borderRadius: 16,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.2,
+                            shadowRadius: 8,
+                            elevation: 5
+                        }}
+                    >
+                        <Text style={{ color: '#000000', fontSize: 12, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 }}>Home</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
         </View>
     );
 }

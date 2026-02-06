@@ -116,21 +116,18 @@ export function ProductsScreen() {
             <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
             <View className="flex-1" style={{ paddingTop: insets.top }}>
                 <View className="px-6 pt-2 pb-0">
-                    {/* Header Area */}
-                    <View className="flex-row justify-between items-center mb-4">
-                        <View>
-                            <Text className="text-3xl font-bold text-black tracking-tighter">Home</Text>
-                        </View>
-                    </View>
-
-                    {/* Search */}
-                    <View className="mb-4">
+                    {/* Search Area - Sharp Theme Integration */}
+                    <View style={{ marginTop: 0, marginBottom: 12 }}>
                         <Input
-                            placeholder="Search our catalogue..."
+                            placeholder="Search our collection..."
                             value={searchQuery}
                             onChangeText={setSearchQuery}
-                            icon="search"
-                            containerClassName="h-12 rounded-xl bg-silver-50 border-silver-100"
+                            icon="search-outline"
+                            containerClassName="mb-0"
+                            style={{
+                                height: 56,
+                                backgroundColor: 'transparent' // Ensuring it sits flat on the white bg
+                            }}
                         />
                     </View>
 
@@ -146,9 +143,9 @@ export function ProductsScreen() {
                                 backgroundColor: !selectedCategory ? '#004c8c' : '#F2F2F7',
                                 borderColor: !selectedCategory ? '#004c8c' : '#F2F2F7'
                             }}
-                            className="mr-3 px-6 py-3 rounded-[20px] border"
+                            className="mr-3 px-6 py-3 rounded-lg border"
                         >
-                            <Text className={`font-bold text-[13px] ${!selectedCategory ? 'text-white' : 'text-[#8E8E93]'}`}>All</Text>
+                            <Text className={`font-semibold text-[13px] ${!selectedCategory ? 'text-white' : 'text-[#8E8E93]'} uppercase tracking-wider`}>All</Text>
                         </TouchableOpacity>
                         {collections.map(col => (
                             <TouchableOpacity
@@ -158,9 +155,9 @@ export function ProductsScreen() {
                                     backgroundColor: selectedCategory === col.id ? '#004c8c' : '#F2F2F7',
                                     borderColor: selectedCategory === col.id ? '#004c8c' : '#F2F2F7'
                                 }}
-                                className="mr-3 px-6 py-3 rounded-[20px] border"
+                                className="mr-3 px-6 py-3 rounded-lg border"
                             >
-                                <Text className={`font-bold text-[13px] ${selectedCategory === col.id ? 'text-white' : 'text-[#8E8E93]'}`}>
+                                <Text className={`font-semibold text-[13px] ${selectedCategory === col.id ? 'text-white' : 'text-[#8E8E93]'} uppercase tracking-wider`}>
                                     {col.title}
                                 </Text>
                             </TouchableOpacity>
@@ -185,7 +182,7 @@ export function ProductsScreen() {
                                 <View className="flex-row items-center justify-between mb-4 px-1">
                                     <Text className="text-xl font-bold text-black tracking-tight">Featured Pieces</Text>
                                     <TouchableOpacity>
-                                        <Text className="text-[12px] font-bold text-[#004c8c] uppercase tracking-wider">See All</Text>
+                                        <Text className="text-[12px] font-bold text-[#636366] uppercase tracking-wider">See All</Text>
                                     </TouchableOpacity>
                                 </View>
 
