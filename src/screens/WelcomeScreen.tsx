@@ -41,9 +41,13 @@ export function WelcomeScreen({ onSignInWithEmail, onContinueWithGoogle }: Welco
                 </View>
 
                 {/* Top Image Card - Editorial focus with local image */}
-                <View className="w-full h-[38%] rounded-[40px] overflow-hidden bg-white/10 border border-white/20 shadow-2xl">
+                <View
+                    style={{ borderRadius: 20 }}
+                    className="w-full h-[38%] overflow-hidden bg-white/10 border border-white/20 shadow-2xl"
+                >
                     <Image
                         source={HERO_IMAGE}
+                        style={{ borderRadius: 20 }}
                         className="w-full h-full"
                         resizeMode="cover"
                     />

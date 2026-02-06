@@ -20,12 +20,14 @@ function CollectionCard({ node }: { node: Node }) {
 
     return (
         <TouchableOpacity
-            className="w-full h-48 rounded-[40px] mb-6 overflow-hidden bg-silver-50 border border-silver-100"
-            activeOpacity={0.9}
             onPress={() => navigation.navigate('Home', { selectedCollectionId: node.id })}
+            style={{ borderRadius: 40 }}
+            className="w-full h-48 mb-6 overflow-hidden bg-silver-50 border border-silver-100"
+            activeOpacity={0.9}
         >
             <SecureImage
                 source={{ uri: imageUrl || '' }}
+                style={{ borderRadius: 40 }}
                 className="w-full h-full"
                 fallbackComponent={<View className="w-full h-full bg-silver-200 items-center justify-center"><Ionicons name="images-outline" size={32} color="#AEAEB2" /></View>}
             />
@@ -59,15 +61,7 @@ export function CollectionsScreen() {
     return (
         <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
             <View className="px-6 pt-6 pb-2 mb-4">
-                <View className="flex-row justify-between items-center">
-                    <Text className="text-4xl font-bold text-black tracking-tighter">Collections</Text>
-                    <TouchableOpacity
-                        onPress={handleRefresh}
-                        className="w-12 h-12 rounded-full bg-silver-50 items-center justify-center border border-silver-100"
-                    >
-                        <Ionicons name="refresh" size={20} color="#000" />
-                    </TouchableOpacity>
-                </View>
+                <Text className="text-4xl font-bold text-black tracking-tighter">Collections</Text>
             </View>
 
             <FlatList

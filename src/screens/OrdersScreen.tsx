@@ -145,7 +145,7 @@ export function OrdersScreen() {
         <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
             <View className="flex-1">
                 {/* Header */}
-                <View className="px-6 pt-6 pb-2 flex-row items-center justify-between">
+                <View className="px-6 pt-6 pb-2">
                     <View className="flex-row items-center">
                         <TouchableOpacity
                             onPress={() => navigation.goBack()}
@@ -155,12 +155,6 @@ export function OrdersScreen() {
                         </TouchableOpacity>
                         <Text className="text-3xl font-bold text-black tracking-tight leading-tight">Orders</Text>
                     </View>
-                    <TouchableOpacity
-                        onPress={loadOrders}
-                        className="w-10 h-10 items-center justify-center"
-                    >
-                        <Ionicons name="reload" size={20} color="#000" />
-                    </TouchableOpacity>
                 </View>
 
                 {isLoading ? (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView, StatusBar } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -204,159 +204,165 @@ export function CheckoutAddressScreen() {
 
     if (isLoading) {
         return (
-            <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
-                <View className="flex-1 justify-center items-center">
-                    <ActivityIndicator color="#004c8c" />
+            <View className="flex-1 bg-white">
+                <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
+                <View className="flex-1" style={{ paddingTop: insets.top }}>
+                    <View className="flex-1 justify-center items-center">
+                        <ActivityIndicator color="#004c8c" />
+                    </View>
                 </View>
             </View>
         );
     }
 
     return (
-        <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
-            <View className="flex-row items-center px-6 pt-4 pb-4">
-                <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 items-center justify-center -ml-2">
-                    <Ionicons name="chevron-back" size={24} color="#000" />
-                </TouchableOpacity>
-                <Text className="text-xl font-bold text-black ml-2">Checkout</Text>
-            </View>
-
-            <ScrollView
-                contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 100 }}
-                showsVerticalScrollIndicator={false}
-            >
-                {isAdmin && (
-                    <View className="mb-10">
-                        <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Customer Details</Text>
-                        <TouchableOpacity
-                            onPress={() => navigation.navigate('Actors')}
-                            activeOpacity={0.7}
-                            className="flex-row items-center p-4 bg-white rounded-2xl border border-silver-200 shadow-sm"
-                        >
-                            <View className="w-12 h-12 rounded-full bg-silver-50 items-center justify-center border border-silver-100">
-                                <Ionicons name="person" size={22} color="#004c8c" />
-                            </View>
-                            <View className="ml-4 flex-1">
-                                <Text className="text-[16px] font-bold text-black">
-                                    {selectedActor ? selectedActor.name : 'Select Customer'}
-                                </Text>
-                                {selectedActor && (
-                                    <Text className="text-[12px] text-brand-secondary mt-0.5">{selectedActor.globalcode}</Text>
-                                )}
-                            </View>
-                            <View className="px-3 py-1 bg-silver-50 rounded-lg">
-                                <Text className="text-[11px] font-bold text-[#004c8c] uppercase">Change</Text>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                <View className="mb-6">
-                    <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Shipping Address</Text>
-
-                    {isAddingNew ? (
-                        <View className="bg-silver-50 p-5 rounded-[20px] border border-silver-100">
-                            <Text className="text-[13px] font-bold text-black mb-4">Add New Location</Text>
-                            <Input
-                                value={newAddress}
-                                onChangeText={setNewAddress}
-                                placeholder="Enter full delivery address..."
-                                multiline
-                                numberOfLines={3}
-                                autoFocus
-                                textAlignVertical="top"
-                                containerClassName="h-28 mb-6 bg-white border-silver-200"
-                            />
-                            <TouchableOpacity
-                                className="flex-row items-center mb-6"
-                                onPress={() => setSetAsDefault(!setAsDefault)}
-                            >
-                                <Ionicons
-                                    name={setAsDefault ? "checkbox" : "square-outline"}
-                                    size={20}
-                                    color={setAsDefault ? "#004c8c" : "#AEAEB2"}
-                                />
-                                <Text className="text-[14px] font-medium text-black ml-3">Set as primary address</Text>
-                            </TouchableOpacity>
-
-                            <View className="flex-row gap-3">
-                                {addressHistory.length > 0 && (
-                                    <TouchableOpacity
-                                        onPress={() => setIsAddingNew(false)}
-                                        className="flex-1 h-12 rounded-xl border border-silver-200 items-center justify-center bg-white"
-                                    >
-                                        <Text className="text-[13px] text-brand-secondary font-bold uppercase tracking-wider">Cancel</Text>
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        </View>
-                    ) : (
-                        <View className="gap-3">
-                            {addressHistory.map((addr) => {
-                                const isSelected = selectedAddressId === addr.id;
-                                return (
-                                    <TouchableOpacity
-                                        key={addr.id}
-                                        activeOpacity={0.8}
-                                        style={{
-                                            borderColor: isSelected ? '#004c8c' : '#E5E5EA',
-                                            backgroundColor: isSelected ? '#F8FBFF' : '#FFFFFF',
-                                            borderWidth: isSelected ? 2 : 1
-                                        }}
-                                        className="flex-row items-center p-5 rounded-2xl shadow-sm"
-                                        onPress={() => setSelectedAddressId(addr.id)}
-                                    >
-                                        <View className="flex-1">
-                                            <View className="flex-row items-center justify-between mb-1">
-                                                <Text className={`text-[15px] ${isSelected ? 'font-bold text-black' : 'text-[#3A3A3C] font-medium'}`}>
-                                                    Home / Work Location
-                                                </Text>
-                                                {isSelected && <Ionicons name="checkmark-circle" size={20} color="#004c8c" />}
-                                            </View>
-                                            <Text className={`text-[13px] leading-5 ${isSelected ? 'text-black' : 'text-brand-secondary'}`} numberOfLines={2}>
-                                                {addr.text}
-                                            </Text>
-                                            {addr.isDefault && (
-                                                <View className="bg-[#004c8c]/10 self-start px-2 py-0.5 rounded-md mt-2">
-                                                    <Text className="text-[9px] font-bold text-[#004c8c] uppercase tracking-wider">Default</Text>
-                                                </View>
-                                            )}
-                                        </View>
-                                    </TouchableOpacity>
-                                );
-                            })}
-
-                            <TouchableOpacity
-                                className="flex-row items-center justify-center h-14 rounded-2xl border border-dashed border-silver-300 bg-silver-50 mt-2"
-                                onPress={() => {
-                                    setIsAddingNew(true);
-                                    setSelectedAddressId(null);
-                                }}
-                            >
-                                <Ionicons name="add" size={18} color="#004c8c" />
-                                <Text className="text-[13px] font-bold text-[#004c8c] ml-2 uppercase tracking-widest">New Delivery Address</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
+        <View className="flex-1 bg-white">
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
+            <View className="flex-1" style={{ paddingTop: insets.top }}>
+                <View className="flex-row items-center px-6 pt-4 pb-4">
+                    <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 items-center justify-center -ml-2">
+                        <Ionicons name="chevron-back" size={24} color="#000" />
+                    </TouchableOpacity>
+                    <Text className="text-xl font-bold text-black ml-2">Checkout</Text>
                 </View>
-            </ScrollView>
 
-            <View className="p-6 border-t border-silver-100 bg-white" style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
-                <TouchableOpacity
-                    onPress={handlePlaceOrder}
-                    disabled={isProcessing}
-                    style={{ backgroundColor: '#004c8c' }}
-                    className={`h-14 rounded-2xl flex-row items-center justify-center shadow-lg ${isProcessing ? 'opacity-50' : ''}`}
+                <ScrollView
+                    contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 100 }}
+                    showsVerticalScrollIndicator={false}
                 >
-                    {isProcessing ? (
-                        <ActivityIndicator color="white" />
-                    ) : (
-                        <>
-                            <Text className="text-white text-[15px] font-bold uppercase tracking-[1.5px] mr-2">Place Order</Text>
-                            <Ionicons name="arrow-forward" size={18} color="white" />
-                        </>
+                    {isAdmin && (
+                        <View className="mb-10">
+                            <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Customer Details</Text>
+                            <TouchableOpacity
+                                onPress={() => navigation.navigate('Actors')}
+                                activeOpacity={0.7}
+                                className="flex-row items-center p-4 bg-white rounded-2xl border border-silver-200 shadow-sm"
+                            >
+                                <View className="w-12 h-12 rounded-full bg-silver-50 items-center justify-center border border-silver-100">
+                                    <Ionicons name="person" size={22} color="#004c8c" />
+                                </View>
+                                <View className="ml-4 flex-1">
+                                    <Text className="text-[16px] font-bold text-black">
+                                        {selectedActor ? selectedActor.name : 'Select Customer'}
+                                    </Text>
+                                    {selectedActor && (
+                                        <Text className="text-[12px] text-brand-secondary mt-0.5">{selectedActor.globalcode}</Text>
+                                    )}
+                                </View>
+                                <View className="px-3 py-1 bg-silver-50 rounded-lg">
+                                    <Text className="text-[11px] font-bold text-[#004c8c] uppercase">Change</Text>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
                     )}
-                </TouchableOpacity>
+
+                    <View className="mb-6">
+                        <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Shipping Address</Text>
+
+                        {isAddingNew ? (
+                            <View className="bg-silver-50 p-5 rounded-[20px] border border-silver-100">
+                                <Text className="text-[13px] font-bold text-black mb-4">Add New Location</Text>
+                                <Input
+                                    value={newAddress}
+                                    onChangeText={setNewAddress}
+                                    placeholder="Enter full delivery address..."
+                                    multiline
+                                    numberOfLines={3}
+                                    autoFocus
+                                    textAlignVertical="top"
+                                    containerClassName="h-28 mb-6 bg-white border-silver-200"
+                                />
+                                <TouchableOpacity
+                                    className="flex-row items-center mb-6"
+                                    onPress={() => setSetAsDefault(!setAsDefault)}
+                                >
+                                    <Ionicons
+                                        name={setAsDefault ? "checkbox" : "square-outline"}
+                                        size={20}
+                                        color={setAsDefault ? "#004c8c" : "#AEAEB2"}
+                                    />
+                                    <Text className="text-[14px] font-medium text-black ml-3">Set as primary address</Text>
+                                </TouchableOpacity>
+
+                                <View className="flex-row gap-3">
+                                    {addressHistory.length > 0 && (
+                                        <TouchableOpacity
+                                            onPress={() => setIsAddingNew(false)}
+                                            className="flex-1 h-12 rounded-xl border border-silver-200 items-center justify-center bg-white"
+                                        >
+                                            <Text className="text-[13px] text-brand-secondary font-bold uppercase tracking-wider">Cancel</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            </View>
+                        ) : (
+                            <View className="gap-3">
+                                {addressHistory.map((addr) => {
+                                    const isSelected = selectedAddressId === addr.id;
+                                    return (
+                                        <TouchableOpacity
+                                            key={addr.id}
+                                            activeOpacity={0.8}
+                                            style={{
+                                                borderColor: isSelected ? '#004c8c' : '#E5E5EA',
+                                                backgroundColor: isSelected ? '#F8FBFF' : '#FFFFFF',
+                                                borderWidth: isSelected ? 2 : 1
+                                            }}
+                                            className="flex-row items-center p-5 rounded-2xl shadow-sm"
+                                            onPress={() => setSelectedAddressId(addr.id)}
+                                        >
+                                            <View className="flex-1">
+                                                <View className="flex-row items-center justify-between mb-1">
+                                                    <Text className={`text-[15px] ${isSelected ? 'font-bold text-black' : 'text-[#3A3A3C] font-medium'}`}>
+                                                        Home / Work Location
+                                                    </Text>
+                                                    {isSelected && <Ionicons name="checkmark-circle" size={20} color="#004c8c" />}
+                                                </View>
+                                                <Text className={`text-[13px] leading-5 ${isSelected ? 'text-black' : 'text-brand-secondary'}`} numberOfLines={2}>
+                                                    {addr.text}
+                                                </Text>
+                                                {addr.isDefault && (
+                                                    <View className="bg-[#004c8c]/10 self-start px-2 py-0.5 rounded-md mt-2">
+                                                        <Text className="text-[9px] font-bold text-[#004c8c] uppercase tracking-wider">Default</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+
+                                <TouchableOpacity
+                                    className="flex-row items-center justify-center h-14 rounded-2xl border border-dashed border-silver-300 bg-silver-50 mt-2"
+                                    onPress={() => {
+                                        setIsAddingNew(true);
+                                        setSelectedAddressId(null);
+                                    }}
+                                >
+                                    <Ionicons name="add" size={18} color="#004c8c" />
+                                    <Text className="text-[13px] font-bold text-[#004c8c] ml-2 uppercase tracking-widest">New Delivery Address</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </View>
+                </ScrollView>
+
+                <View className="p-6 border-t border-silver-100 bg-white" style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
+                    <TouchableOpacity
+                        onPress={handlePlaceOrder}
+                        disabled={isProcessing}
+                        style={{ backgroundColor: '#004c8c' }}
+                        className={`h-14 rounded-2xl flex-row items-center justify-center shadow-lg ${isProcessing ? 'opacity-50' : ''}`}
+                    >
+                        {isProcessing ? (
+                            <ActivityIndicator color="white" />
+                        ) : (
+                            <>
+                                <Text className="text-white text-[15px] font-bold uppercase tracking-[1.5px] mr-2">Place Order</Text>
+                                <Ionicons name="arrow-forward" size={18} color="white" />
+                            </>
+                        )}
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
     );

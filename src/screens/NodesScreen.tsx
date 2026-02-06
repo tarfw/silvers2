@@ -40,9 +40,13 @@ function NodeItem({
             activeOpacity={0.7}
         >
             {(node.nodetype === 'product' || node.nodetype === 'category' || node.nodetype === 'collection') && (
-                <View className="w-14 h-14 rounded-md bg-silver-50 border border-silver-100 items-center justify-center overflow-hidden">
+                <View
+                    style={{ borderRadius: 8 }}
+                    className="w-14 h-14 bg-silver-50 border border-silver-100 items-center justify-center overflow-hidden"
+                >
                     <SecureImage
                         source={{ uri: payload.image }}
+                        style={{ borderRadius: 8 }}
                         className="w-full h-full"
                         fallbackComponent={<Ionicons name="cube-outline" size={24} color="#AEAEB2" />}
                     />
@@ -305,12 +309,8 @@ export function NodesScreen() {
                 <View className="px-6 pt-6 pb-4">
                     <View className="flex-row justify-between items-end mb-6">
                         <View>
-                            <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2.5px] mb-1">Catalog Manager</Text>
                             <Text className="text-4xl font-bold text-black tracking-tighter">All Products</Text>
                         </View>
-                        {isSyncing && (
-                            <ActivityIndicator size="small" color="#000" />
-                        )}
                     </View>
 
                     {/* Integrated Search */}

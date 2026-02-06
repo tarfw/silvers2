@@ -128,6 +128,16 @@ export function ProductDetailsScreen() {
                             </View>
                         }
                     />
+
+                    {/* Floating Back Button */}
+                    <TouchableOpacity
+                        onPress={() => navigation.goBack()}
+                        style={{ top: insets.top + 10 }}
+                        className="absolute left-6 w-12 h-12 rounded-full bg-white/90 items-center justify-center shadow-lg border border-white/20"
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="chevron-back" size={24} color="#000" />
+                    </TouchableOpacity>
                 </View>
 
                 {/* Content Container */}
