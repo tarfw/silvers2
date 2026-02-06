@@ -44,11 +44,11 @@ export const Button: React.FC<ButtonProps> = ({
 
     const getVariantClass = () => {
         switch (variant) {
-            case 'primary': return 'bg-brand-primary';
+            case 'primary': return '';
             case 'secondary': return 'bg-silver-100';
             case 'outline': return 'bg-transparent border border-silver-200';
             case 'ghost': return 'bg-transparent';
-            default: return 'bg-brand-primary';
+            default: return '';
         }
     };
 
@@ -80,7 +80,10 @@ export const Button: React.FC<ButtonProps> = ({
             activeOpacity={0.8}
             style={animatedStyle}
         >
-            <View className={`flex-row items-center justify-center ${getVariantClass()} ${getSizeClass()} ${className} ${disabled ? 'opacity-50' : ''}`}>
+            <View
+                style={variant === 'primary' || !['secondary', 'outline', 'ghost'].includes(variant) ? { backgroundColor: '#004c8c' } : {}}
+                className={`flex-row items-center justify-center ${getVariantClass()} ${getSizeClass()} ${className} ${disabled ? 'opacity-50' : ''}`}
+            >
                 {isLoading ? (
                     <ActivityIndicator color={variant === 'primary' ? 'white' : '#000'} />
                 ) : (

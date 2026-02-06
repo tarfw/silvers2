@@ -46,7 +46,7 @@ export function CustomTabBar({ state, descriptors, navigation }: any) {
                             {
                                 width: TAB_WIDTH - 12,
                                 height: 56,
-                                backgroundColor: '#000',
+                                backgroundColor: '#004c8c',
                                 position: 'absolute',
                                 left: 6,
                                 borderRadius: 28,

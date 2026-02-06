@@ -1,19 +1,29 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, Dimensions, Alert } from 'react-native';
+import {
+    View,
+    Text,
+    ScrollView,
+    TouchableOpacity,
+    Dimensions,
+    Alert,
+    Platform,
+    StatusBar
+} from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SecureImage } from '../components/SecureImage';
 import { Ionicons } from '@expo/vector-icons';
 import { Node } from '../types';
 import { useNodes } from '../hooks/useNodes';
 import { useAuth } from '../contexts/AuthContext';
 import { generateShortId } from '../lib/utils';
-import { Button } from '../components/ui/Button';
 
 const { width } = Dimensions.get('window');
 
 export function ProductDetailsScreen() {
     const route = useRoute();
     const navigation = useNavigation();
+    const insets = useSafeAreaInsets();
     const { product } = route.params as { product: Node };
     const { nodes } = useNodes();
     const { user, db } = useAuth();
@@ -85,7 +95,7 @@ export function ProductDetailsScreen() {
             ]);
 
             setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 3000);
+            setTimeout(() => setShowSuccess(false), 1500);
         } catch (error) {
             console.error('Add to cart error:', error);
             Alert.alert('Error', 'Failed to add to cart');
@@ -94,72 +104,71 @@ export function ProductDetailsScreen() {
 
     return (
         <View className="flex-1 bg-white">
-            {/* Transparent Header */}
-            <SafeAreaView className="absolute top-0 left-0 right-0 z-50">
-                <View className="flex-row items-center justify-between px-4 h-14">
-                    <TouchableOpacity
-                        onPress={() => navigation.goBack()}
-                        className="w-10 h-10 items-center justify-center bg-white/80 rounded-full shadow-sm"
-                    >
-                        <Ionicons name="chevron-back" size={24} color="#000" />
-                    </TouchableOpacity>
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-                    <TouchableOpacity
-                        onPress={() => (navigation.navigate as any)('MainTabs', { screen: 'Cart' })}
-                        className="w-10 h-10 items-center justify-center bg-white/80 rounded-full shadow-sm"
-                    >
-                        <Ionicons name="cart-outline" size={24} color="#000" />
-                    </TouchableOpacity>
-                </View>
-            </SafeAreaView>
-
-            <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-                {/* Hero Image Section */}
-                <View className="relative bg-silver-50">
+            <ScrollView
+                className="flex-1"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 140 }}
+            >
+                {/* Hero Image */}
+                <View className="w-full bg-silver-50 relative">
                     <SecureImage
                         source={{ uri: imageUrl || '' }}
-                        className="w-full aspect-[4/5]"
-                        fallbackComponent={<View className="w-full aspect-[4/5] bg-silver-200 items-center justify-center"><Ionicons name="image-outline" size={64} color="#AEAEB2" /></View>}
+                        style={{ width: width, height: width }}
+                        className="bg-silver-100"
+                        resizeMode="cover"
+                        fallbackComponent={
+                            <View style={{ width: width, height: width }} className="bg-silver-100 items-center justify-center">
+                                <Ionicons name="image-outline" size={64} color="#D1D1D6" />
+                            </View>
+                        }
                     />
-                    {/* Shadow overlay for bottom fade if needed */}
                 </View>
 
-                <View className="px-6 py-8">
-                    {/* Title & Badge Section */}
-                    <View className="flex-row justify-between items-start mb-4">
-                        <View className="flex-1 mr-4">
-                            <Text className="text-3xl font-bold text-black tracking-tight leading-tight">{product.title}</Text>
-                            {product.universalcode ? (
-                                <View className="mt-2 bg-silver-100 self-start px-2 py-1 rounded-md">
-                                    <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-widest">{product.universalcode}</Text>
-                                </View>
-                            ) : null}
-                        </View>
+                {/* Content Container */}
+                <View className="px-6 pt-8">
+                    {/* Title & Badges */}
+                    <View className="mb-6">
+                        <Text className="text-3xl font-bold text-black leading-tight tracking-tight">
+                            {product.title}
+                        </Text>
                     </View>
 
-                    {/* Description Section */}
+                    {/* Description */}
                     {description && (
-                        <View className="mb-10">
-                            <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[2.5px] mb-3">About</Text>
-                            <Text className="text-base text-brand-secondary leading-[26px] font-medium">{description}</Text>
+                        <View className="mb-8">
+                            <Text className="text-[16px] text-[#3A3A3C] leading-[26px] font-normal">
+                                {description}
+                            </Text>
                         </View>
                     )}
 
-                    {/* Options Mapping */}
+                    {/* Options */}
                     {optionsGroups && Object.entries(optionsGroups).map(([group, optIds]) => (
-                        <View key={group} className="mb-10">
-                            <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[2.5px] mb-4">{group}</Text>
-                            <View className="flex-row flex-wrap gap-2.5">
+                        <View key={group} className="mb-8">
+                            <Text className="text-[13px] font-bold text-black uppercase tracking-[1px] mb-4">
+                                Select {group}
+                            </Text>
+                            <View className="flex-row flex-wrap gap-3">
                                 {optIds.map((id) => {
                                     const title = nodeMap.get(id) || id;
                                     const isSelected = selectedOptions[group] === id;
                                     return (
                                         <TouchableOpacity
                                             key={id}
-                                            className={`px-6 py-3.5 rounded-2xl border ${isSelected ? 'bg-black border-black' : 'bg-white border-silver-200'}`}
                                             onPress={() => handleSelectOption(group, id)}
+                                            style={{
+                                                backgroundColor: isSelected ? '#004c8c' : '#FFFFFF',
+                                                borderColor: isSelected ? '#004c8c' : '#E5E5EA',
+                                                borderWidth: 1,
+                                            }}
+                                            className="px-5 py-3 rounded-xl min-w-[30%] items-center"
+                                            activeOpacity={0.7}
                                         >
-                                            <Text className={`text-[13px] font-bold uppercase tracking-wider ${isSelected ? 'text-white' : 'text-black'}`}>
+                                            <Text
+                                                className={`text-[14px] font-semibold ${isSelected ? 'text-white' : 'text-black'}`}
+                                            >
                                                 {title}
                                             </Text>
                                         </TouchableOpacity>
@@ -168,51 +177,59 @@ export function ProductDetailsScreen() {
                             </View>
                         </View>
                     ))}
-
-                    {/* Extra space for scrolling past the floating bar */}
-                    <View className="h-32" />
                 </View>
             </ScrollView>
 
-            {/* Bottom Floating Action Bar */}
-            <SafeAreaView className="absolute bottom-0 left-0 right-0">
-                {showSuccess && (
-                    <View className="mx-6 mb-4 bg-green-500 flex-row items-center px-5 py-4 rounded-3xl shadow-lg border border-green-400">
-                        <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-                        <Text className="text-white text-sm font-bold flex-1 ml-3">Added to cart successfully</Text>
-                        <TouchableOpacity onPress={() => (navigation.navigate as any)('MainTabs', { screen: 'Cart' })}>
-                            <Text className="text-white text-sm font-bold underline">View</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                <View className="mx-6 mb-6 p-4 bg-white rounded-[40px] shadow-2xl shadow-black/30 border border-silver-100 flex-row items-center">
-                    <View className="flex-row items-center bg-silver-50 rounded-full px-2 h-14 w-32 border border-silver-100">
+            {/* Bottom Action Bar */}
+            <View
+                className="absolute bottom-0 left-0 right-0 bg-white border-t border-silver-100 px-6 py-4 shadow-lg"
+                style={{ paddingBottom: insets.bottom + 10 }}
+            >
+                <View className="flex-row items-center gap-4">
+                    {/* Quantity Stepper */}
+                    <View className="flex-row items-center bg-silver-50 rounded-full h-14 px-1 border border-silver-200">
                         <TouchableOpacity
-                            className="w-10 h-10 items-center justify-center"
                             onPress={() => setQuantity(Math.max(1, quantity - 1))}
+                            className="w-11 h-full items-center justify-center"
                         >
-                            <Ionicons name="remove" size={18} color="#000" />
+                            <Ionicons name="remove" size={20} color={quantity > 1 ? "black" : "#C7C7CC"} />
                         </TouchableOpacity>
-                        <Text className="flex-1 text-lg font-bold text-black text-center">{quantity}</Text>
+
+                        <View className="w-8 items-center">
+                            <Text className="text-lg font-bold text-black">{quantity}</Text>
+                        </View>
+
                         <TouchableOpacity
-                            className="w-10 h-10 items-center justify-center"
                             onPress={() => setQuantity(quantity + 1)}
+                            className="w-11 h-full items-center justify-center"
                         >
-                            <Ionicons name="add" size={18} color="#000" />
+                            <Ionicons name="add" size={20} color="black" />
                         </TouchableOpacity>
                     </View>
 
-                    <View className="flex-1 ml-4">
-                        <Button
-                            label="Add to Cart"
-                            onPress={handleAddToCart}
-                            size="lg"
-                            className="w-full"
-                        />
-                    </View>
+                    {/* Add to Cart Button */}
+                    <TouchableOpacity
+                        onPress={handleAddToCart}
+                        disabled={showSuccess}
+                        activeOpacity={0.8}
+                        style={{ backgroundColor: showSuccess ? '#16a34a' : '#004c8c' }}
+                        className="flex-1 h-14 rounded-full items-center justify-center shadow-sm flex-row"
+                    >
+                        {showSuccess ? (
+                            <>
+                                <Ionicons name="checkmark" size={24} color="white" style={{ marginRight: 8 }} />
+                                <Text className="text-white text-[16px] font-bold uppercase tracking-wider">
+                                    Added
+                                </Text>
+                            </>
+                        ) : (
+                            <Text className="text-white text-[16px] font-bold uppercase tracking-wider">
+                                Add to Cart
+                            </Text>
+                        )}
+                    </TouchableOpacity>
                 </View>
-            </SafeAreaView>
+            </View>
         </View>
     );
 }

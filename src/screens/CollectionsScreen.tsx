@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
     View,
     Text,
-    StyleSheet,
     FlatList,
     TouchableOpacity,
     SafeAreaView,
@@ -11,33 +10,35 @@ import {
 import { useNodes } from '../hooks/useNodes';
 import { SecureImage } from '../components/SecureImage';
 import { Node } from '../types';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
-const Colors = {
-    background: '#FFFFFF',
-    text: '#000000',
-    textSecondary: '#636366',
-    separator: '#F2F2F7',
-};
-
-function CollectionItem({ node }: { node: Node }) {
+function CollectionCard({ node }: { node: Node }) {
+    const navigation = useNavigation<any>();
     const payload = node.payload as any;
     const imageUrl = payload?.image;
 
     return (
-        <TouchableOpacity style={styles.collectionCard} activeOpacity={0.8}>
+        <TouchableOpacity
+            className="w-full h-48 rounded-[40px] mb-6 overflow-hidden bg-silver-50 border border-silver-100"
+            activeOpacity={0.9}
+            onPress={() => navigation.navigate('Home', { selectedCollectionId: node.id })}
+        >
             <SecureImage
                 source={{ uri: imageUrl || '' }}
-                style={styles.collectionImage}
-                fallbackComponent={<View style={styles.imagePlaceholder} />}
+                className="w-full h-full"
+                fallbackComponent={<View className="w-full h-full bg-silver-200 items-center justify-center"><Ionicons name="images-outline" size={32} color="#AEAEB2" /></View>}
             />
-            <View style={styles.overlay}>
-                <Text style={styles.collectionTitle}>{node.title}</Text>
+            <View className="absolute inset-0 bg-black/20 justify-end p-6">
+                <Text className="text-white text-3xl font-bold tracking-tight">{node.title}</Text>
+                <Text className="text-white/80 text-sm font-medium uppercase tracking-widest mt-1">Explore Collection</Text>
             </View>
         </TouchableOpacity>
     );
 }
 
 export function CollectionsScreen() {
+    const navigation = useNavigation();
     const { nodes, isLoading, sync } = useNodes();
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -55,23 +56,36 @@ export function CollectionsScreen() {
     const collectionNodes = nodes.filter(n => n.nodetype === 'collection');
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>Collections</Text>
+        <SafeAreaView className="flex-1 bg-white">
+            <View className="px-6 pt-6 pb-2 mb-4">
+                <View className="flex-row justify-between items-center">
+                    <Text className="text-4xl font-bold text-black tracking-tighter">Collections</Text>
+                    <TouchableOpacity
+                        onPress={handleRefresh}
+                        className="w-12 h-12 rounded-full bg-silver-50 items-center justify-center border border-silver-100"
+                    >
+                        <Ionicons name="refresh" size={20} color="#000" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <FlatList
                 data={collectionNodes}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => <CollectionItem node={item} />}
-                contentContainerStyle={[styles.list, { paddingBottom: 100 }]}
+                renderItem={({ item }) => <CollectionCard node={item} />}
+                contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 10, paddingBottom: 120 }}
+                showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+                    <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#000" />
                 }
                 ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>
-                            {isLoading ? 'Loading...' : 'No collections found'}
+                    <View className="py-20 items-center justify-center">
+                        <View className="w-20 h-20 bg-silver-50 rounded-full items-center justify-center mb-6 border border-silver-100">
+                            <Ionicons name="folder-open-outline" size={32} color="#D1D1D6" />
+                        </View>
+                        <Text className="text-xl font-bold text-black">No collections yet</Text>
+                        <Text className="text-brand-secondary mt-2 text-center px-10">
+                            Create collections to organize your catalog.
                         </Text>
                     </View>
                 }
@@ -79,59 +93,3 @@ export function CollectionsScreen() {
         </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.background,
-    },
-    header: {
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 20,
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: '700',
-        color: Colors.text,
-        letterSpacing: -0.5,
-    },
-    list: {
-        padding: 20,
-    },
-    collectionCard: {
-        height: 180,
-        borderRadius: 16,
-        marginBottom: 20,
-        overflow: 'hidden',
-        backgroundColor: '#F2F2F7',
-    },
-    collectionImage: {
-        width: '100%',
-        height: '100%',
-    },
-    imagePlaceholder: {
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#E5E5EA',
-    },
-    overlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        justifyContent: 'flex-end',
-        padding: 20,
-    },
-    collectionTitle: {
-        color: '#FFFFFF',
-        fontSize: 22,
-        fontWeight: '700',
-    },
-    emptyContainer: {
-        padding: 40,
-        alignItems: 'center',
-    },
-    emptyText: {
-        color: Colors.textSecondary,
-        fontSize: 16,
-    },
-});

@@ -29,6 +29,7 @@ module.exports = {
                     rose: '#E11D48',      // Vivid Rose
                     roseLight: '#FFF1F2', // Pale Pink
                     roseGold: '#FB7185',  // Soft Rose Gold (rose-400)
+                    jewel: '#004c8c',     // Rich Jewel Blue
                 }
             },
             borderRadius: {
