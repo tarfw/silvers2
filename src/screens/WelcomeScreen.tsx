@@ -5,18 +5,15 @@ import {
     Image,
     TouchableOpacity,
     Dimensions,
+    StatusBar
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 // Local asset import for the hero image
 import HERO_IMAGE from '../assets/silver-bangles.jpg';
 
-const { width } = Dimensions.get('window');
-
-// Brighter, vibrant sapphire blue from the jewelry imagery
-const JEWEL_BLUE_BG = '#004c8c';
+const { width, height } = Dimensions.get('window');
 
 interface WelcomeScreenProps {
     onSignInWithEmail: () => void;
@@ -25,69 +22,74 @@ interface WelcomeScreenProps {
 
 export function WelcomeScreen({ onSignInWithEmail, onContinueWithGoogle }: WelcomeScreenProps) {
     const insets = useSafeAreaInsets();
+
     return (
-        <View className="flex-1" style={{ backgroundColor: JEWEL_BLUE_BG, paddingTop: insets.top }}>
-            <StatusBar style="light" />
-            <View className="flex-1 px-6 pb-24">
+        <View className="flex-1 bg-white">
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
-                {/* Brand Name Area - Increased top spacing back to 20 for logo breathing room */}
-                <View className="mt-20 mb-10 items-center justify-center">
-                    <Text className="text-white text-6xl font-serif tracking-[0.05em] font-extrabold text-center">
-                        SKJ
-                    </Text>
-                    <Text className="text-white/60 text-sm font-sans tracking-[0.8em] uppercase text-center mt-3 font-semibold">
-                        SILVERS
-                    </Text>
-                </View>
-
-                {/* Top Image Card - Editorial focus with local image */}
+            {/* Hero Image Section - Taking up substantial space for luxury feel */}
+            <View className="relative">
                 <View
-                    style={{ borderRadius: 20 }}
-                    className="w-full h-[38%] overflow-hidden bg-white/10 border border-white/20 shadow-2xl"
+                    style={{ height: height * 0.55 }}
+                    className="w-full bg-silver-100 overflow-hidden"
                 >
                     <Image
                         source={HERO_IMAGE}
-                        style={{ borderRadius: 20 }}
                         className="w-full h-full"
                         resizeMode="cover"
                     />
+                    {/* Soft gradient overlay for text readability if needed */}
+                    <View className="absolute inset-0 bg-black/5" />
                 </View>
 
-                {/* Welcome Text */}
-                <View className="mt-10 mb-8">
-                    <Text className="text-3xl text-white font-serif tracking-tight leading-[42px] font-semibold">
-                        Elegance in Detail.{"\n"}
-                        Wear the Silver.
-                    </Text>
+                {/* Brand Floating Logo */}
+                <View
+                    style={{ top: insets.top + 20 }}
+                    className="absolute left-0 right-0 items-center"
+                >
+                    <View className="px-6 py-2 bg-white/90 rounded-full border border-silver-200 backdrop-blur-md">
+                        <Text className="text-black text-xs font-bold tracking-[0.5em] uppercase">
+                            Silvers
+                        </Text>
+                    </View>
+                </View>
+            </View>
 
-                    <Text className="text-white/70 text-base mt-4 font-light leading-6">
+            {/* Content Section */}
+            <View
+                className="flex-1 px-8 pt-10 pb-12 justify-between"
+                style={{ backgroundColor: '#FFFFFF' }}
+            >
+                <View>
+                    <View className="w-12 h-1 bg-black mb-6 rounded-full" />
+                    <Text className="text-5xl font-bold text-black tracking-tighter leading-[54px]">
+                        Elegance{"\n"}Defined.
+                    </Text>
+                    <Text className="text-brand-secondary text-[16px] font-medium mt-6 leading-6">
                         Explore our exclusive catalogues of fine rings, bangles, and customized silver jewelry.
                     </Text>
                 </View>
 
                 {/* Action Buttons */}
-                <View className="mt-auto">
+                <View className="gap-y-4">
                     <TouchableOpacity
                         onPress={onSignInWithEmail}
-                        activeOpacity={0.8}
-                        className="w-full h-16 bg-white rounded-full flex-row items-center justify-between px-8 shadow-lg shadow-black/20"
+                        activeOpacity={0.9}
+                        className="w-full h-16 bg-black rounded-2xl flex-row items-center justify-center border border-black"
                     >
-                        <Text className="text-black text-lg font-bold">Continue with Email</Text>
-                        <Ionicons name="arrow-forward" size={24} color="#E11D48" />
+                        <Text className="text-white text-[15px] font-bold uppercase tracking-[2px]">Enter Store</Text>
+                        <Ionicons name="arrow-forward" size={18} color="white" style={{ marginLeft: 10 }} />
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         onPress={onContinueWithGoogle}
                         activeOpacity={0.7}
-                        className="w-full h-16 bg-white/10 border border-white/20 rounded-full flex-row items-center justify-center px-8 mt-8"
+                        className="w-full h-16 bg-silver-50 border border-silver-100 rounded-2xl flex-row items-center justify-center"
                     >
-                        <View className="mr-4">
-                            <Ionicons name="logo-google" size={22} color="white" />
-                        </View>
-                        <Text className="text-white text-base font-bold">Sign in with Google</Text>
+                        <Ionicons name="logo-google" size={18} color="#000" />
+                        <Text className="text-black text-[14px] font-bold ml-3 uppercase tracking-wider">Continue with Google</Text>
                     </TouchableOpacity>
                 </View>
-
             </View>
         </View>
     );

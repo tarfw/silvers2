@@ -23,7 +23,7 @@ export function ProfileScreen() {
             >
                 {/* Profile Card */}
                 <View className="px-6 py-10 items-center border-b border-silver-50">
-                    <View className="w-24 h-24 rounded-full bg-black items-center justify-center shadow-xl border-4 border-white">
+                    <View className="w-24 h-24 rounded-full bg-black items-center justify-center border-2 border-silver-100">
                         <Text className="text-4xl font-bold text-white">{initials}</Text>
                     </View>
                     <Text className="text-2xl font-bold text-black mt-6 tracking-tight">

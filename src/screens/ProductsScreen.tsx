@@ -202,7 +202,7 @@ export function ProductsScreen() {
                                             key={p.id}
                                             onPress={() => (navigation as any).navigate('ProductDetails', { product: p })}
                                             style={{ width: width * 0.72, borderRadius: 10 }}
-                                            className="mr-4 bg-white overflow-hidden border border-silver-100 shadow-sm"
+                                            className="mr-4 bg-white overflow-hidden border border-silver-200"
                                             activeOpacity={0.9}
                                         >
                                             <View className="relative">
@@ -213,7 +213,7 @@ export function ProductsScreen() {
                                                 />
                                                 <View
                                                     style={{ backgroundColor: '#004c8c' }}
-                                                    className="absolute top-5 left-5 px-3 py-1.5 shadow-lg"
+                                                    className="absolute top-5 left-5 px-3 py-1.5 border border-white/20"
                                                 >
                                                     <Text className="text-[10px] font-bold text-white uppercase tracking-widest">New Arrival</Text>
                                                 </View>

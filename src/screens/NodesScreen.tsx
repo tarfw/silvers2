@@ -404,14 +404,7 @@ export function NodesScreen() {
             <TouchableOpacity
                 onPress={handleOpenAdd}
                 activeOpacity={0.9}
-                className="absolute bottom-10 right-6 w-16 h-16 bg-black rounded-2xl items-center justify-center shadow-2xl"
-                style={{
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 12 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 16,
-                    elevation: 10
-                }}
+                className="absolute bottom-10 right-6 w-16 h-16 bg-black rounded-2xl items-center justify-center border border-black"
             >
                 <Ionicons name="add" size={32} color="#FFF" />
             </TouchableOpacity>
