@@ -37,6 +37,9 @@ export function ProductDetailsScreen() {
     const imageUrl = payload?.image;
     const description = payload?.description;
     const optionsGroups = payload?.options as Record<string, string[]> | undefined;
+    const categoryId = payload?.category as string | undefined;
+    const collectionIds = payload?.collections as string[] | undefined;
+    const vendorId = payload?.vendor as string | undefined;
 
     const nodeMap = useMemo(() => {
         const map = new Map<string, string>();
@@ -142,11 +145,37 @@ export function ProductDetailsScreen() {
 
                 {/* Content Container */}
                 <View className="px-6 pt-8">
-                    {/* Title & Badges */}
+                    {/* Category & Collections */}
+                    <View className="flex-row flex-wrap gap-2 mb-3">
+                        {categoryId && (
+                            <View className="bg-silver-100 px-3 py-1 rounded-full border border-silver-200">
+                                <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-wider">
+                                    {nodeMap.get(categoryId) || 'Category'}
+                                </Text>
+                            </View>
+                        )}
+                        {collectionIds?.map(id => (
+                            <View key={id} className="bg-brand-secondary/10 px-3 py-1 rounded-full">
+                                <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-wider">
+                                    {nodeMap.get(id) || id}
+                                </Text>
+                            </View>
+                        ))}
+                    </View>
+
+                    {/* Title & Vendor */}
                     <View className="mb-6">
-                        <Text className="text-3xl font-bold text-black leading-tight tracking-tight">
+                        <Text className="text-3xl font-bold text-black leading-tight tracking-tight mb-2">
                             {product.title}
                         </Text>
+                        {vendorId && (
+                            <View className="flex-row items-center">
+                                <Ionicons name="business-outline" size={14} color="#8E8E93" />
+                                <Text className="text-[13px] font-semibold text-brand-secondary ml-1.5 uppercase tracking-wide">
+                                    by {nodeMap.get(vendorId) || 'Unknown Vendor'}
+                                </Text>
+                            </View>
+                        )}
                     </View>
 
                     {/* Description */}

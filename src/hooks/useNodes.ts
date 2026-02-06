@@ -73,7 +73,7 @@ export function useNodes() {
 
     // Create node
     const createNode = async (input: {
-        nodetype: 'product' | 'category' | 'collection' | 'optionset' | 'option';
+        nodetype: 'product' | 'category' | 'collection' | 'optionset' | 'option' | 'vendor';
         universalcode: string;
         title: string;
         parentid?: string | null;
@@ -114,7 +114,7 @@ export function useNodes() {
 
     // Update node
     const updateNode = async (id: string, updates: Partial<{
-        nodetype: 'product' | 'category' | 'collection' | 'optionset' | 'option';
+        nodetype: 'product' | 'category' | 'collection' | 'optionset' | 'option' | 'vendor';
         universalcode: string;
         title: string;
         parentid: string | null;

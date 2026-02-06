@@ -18,7 +18,7 @@ const ADMIN_MENU_GROUPS = [
     {
         title: 'Catalog',
         items: [
-            { id: 'all', title: 'All Products', iconName: 'grid-outline' as const, screen: 'Nodes' },
+            { id: 'all', title: 'Catalogue', iconName: 'grid-outline' as const, screen: 'Nodes' },
             { id: 'collections', title: 'Collections', iconName: 'albums-outline' as const, screen: 'Collections' },
         ]
     },

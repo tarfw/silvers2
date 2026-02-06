@@ -22,7 +22,7 @@ export interface Collab {
 export interface Node {
   id: string;
   parentid: string | null;
-  nodetype: 'product' | 'category' | 'collection' | 'optionset' | 'option';
+  nodetype: 'product' | 'category' | 'collection' | 'optionset' | 'option' | 'vendor';
   universalcode: string;
   title: string;
   payload?: string;    // JSON string
