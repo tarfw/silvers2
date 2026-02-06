@@ -46,14 +46,14 @@ export function useNodes() {
                 // 1. Load from local DB immediately for instant UI response
                 await loadNodes();
 
-                // 2. Perform pull in the background
+                // 2. Perform full sync in the background
                 try {
-                    console.log('[useNodes] Background pull starting...');
-                    await databaseManager.pull();
-                    console.log('[useNodes] Background pull completed.');
-                    await loadNodes(); // Refresh after pull
+                    console.log('[useNodes] Background sync starting...');
+                    await databaseManager.sync();
+                    console.log('[useNodes] Background sync completed.');
+                    await loadNodes(); // Refresh after sync
                 } catch (error) {
-                    console.warn('[useNodes] Background pull failed:', error);
+                    console.warn('[useNodes] Background sync failed:', error);
                 }
             }
         };

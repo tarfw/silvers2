@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, ScrollView, Dimensions, StatusBar } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, ScrollView, Dimensions, StatusBar, TextInput } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNodes } from '../hooks/useNodes';
 import { SecureImage } from '../components/SecureImage';
@@ -116,19 +116,19 @@ export function ProductsScreen() {
             <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
             <View className="flex-1" style={{ paddingTop: insets.top }}>
                 <View className="px-6 pt-2 pb-0">
-                    {/* Search Area - Sharp Theme Integration */}
-                    <View style={{ marginTop: 0, marginBottom: 12 }}>
-                        <Input
-                            placeholder="Search our collection..."
+                    {/* Modern Search Bar - NativeWind Designed */}
+                    <View className="flex-row items-center bg-silver-100/50 rounded-2xl px-5 h-14 mb-6">
+                        <Ionicons name="search-outline" size={20} color="#8E8E93" />
+                        <TextInput
+                            placeholder="Find your silver piece..."
+                            placeholderTextColor="#8E8E93"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
-                            icon="search-outline"
-                            containerClassName="mb-0"
-                            style={{
-                                height: 56,
-                                backgroundColor: 'transparent' // Ensuring it sits flat on the white bg
-                            }}
+                            className="flex-1 ml-3 text-[16px] text-black font-medium"
                         />
+                        <TouchableOpacity activeOpacity={0.7} className="ml-2 pl-3 border-l border-silver-200">
+                            <Ionicons name="options-outline" size={20} color="#004c8c" />
+                        </TouchableOpacity>
                     </View>
 
                     {/* Horizontal Collections */}

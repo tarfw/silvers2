@@ -50,7 +50,7 @@ export function MenuScreen() {
     const navigation = useNavigation<any>();
     const insets = useSafeAreaInsets();
     const { isAdmin } = useAuth();
-    const { isSyncing, pull, push } = useNodes();
+    const { isSyncing, pull, push, sync } = useNodes();
     const [isPulling, setIsPulling] = useState(false);
     const [isPushing, setIsPushing] = useState(false);
 
@@ -131,41 +131,36 @@ export function MenuScreen() {
                 </ScrollView>
             </View>
 
-            {/* Bottom Floating Sync Bar */}
+            {/* Bottom Floating Sync Bar - Unified for Reliability */}
             <View className="absolute bottom-32 left-6 right-6">
-                <View className="bg-black rounded-full h-16 flex-row items-center px-2 shadow-2xl items-center justify-between">
-                    <View className="flex-row flex-1">
-                        <TouchableOpacity
-                            onPress={handlePull}
-                            disabled={isPulling}
-                            className="flex-1 items-center justify-center"
-                        >
-                            <View className="flex-row items-center">
-                                <Ionicons name="cloud-download-outline" size={18} color="#FFF" />
-                                <Text className="text-white font-bold ml-2 text-sm uppercase tracking-widest">Pull</Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        <View className="w-[1px] h-6 bg-white/20 self-center" />
-
-                        <TouchableOpacity
-                            onPress={handlePush}
-                            disabled={isPushing}
-                            className="flex-1 items-center justify-center"
-                        >
-                            <View className="flex-row items-center">
-                                <Ionicons name="cloud-upload-outline" size={18} color="#FFF" />
-                                <Text className="text-white font-bold ml-2 text-sm uppercase tracking-widest">Push</Text>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View className="bg-white/10 px-4 py-2 rounded-full mr-1">
-                        <Text className="text-[10px] font-bold text-white/60 uppercase tracking-widest">
-                            {isPulling || isPushing || isSyncing ? 'Syncing...' : 'Synced'}
+                <TouchableOpacity
+                    onPress={async () => {
+                        try {
+                            await sync();
+                        } catch (e) {
+                            Alert.alert('Sync Failed', 'Could not synchronize with cloud. Check your connection.');
+                        }
+                    }}
+                    disabled={isSyncing}
+                    activeOpacity={0.8}
+                    className="bg-black rounded-full h-16 flex-row items-center px-6 shadow-2xl justify-between"
+                >
+                    <View className="flex-row items-center">
+                        <Ionicons
+                            name={isSyncing ? "refresh" : "cloud-done-outline"}
+                            size={20}
+                            color="#FFF"
+                        />
+                        <Text className="text-white font-bold ml-3 text-sm uppercase tracking-widest">
+                            {isSyncing ? 'Synchronizing...' : 'Sync Everything'}
                         </Text>
                     </View>
-                </View>
+                    <View className="bg-white/10 px-4 py-2 rounded-full">
+                        <Text className="text-[10px] font-bold text-white/60 uppercase tracking-widest">
+                            {isSyncing ? 'In Progress' : 'Cloud Safe'}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
             </View>
         </View>
     );
