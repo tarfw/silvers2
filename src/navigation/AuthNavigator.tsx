@@ -18,17 +18,7 @@ export function AuthNavigator() {
                 animation: 'slide_from_right',
             }}
         >
-            <Stack.Screen name="Welcome">
-                {(props) => (
-                    <WelcomeScreen
-                        onSignInWithEmail={() => props.navigation.navigate('SignIn')}
-                        onContinueWithGoogle={() => {
-                            // TODO: Implement Google Sign In
-                            console.log('Google Sign In');
-                        }}
-                    />
-                )}
-            </Stack.Screen>
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="SignIn" component={AuthScreen} />
         </Stack.Navigator>
     );

@@ -5,92 +5,183 @@ import {
     Image,
     TouchableOpacity,
     Dimensions,
-    StatusBar
+    StatusBar,
+    ScrollView,
+    StyleSheet
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../navigation/AuthNavigator';
 
 // Local asset import for the hero image
 import HERO_IMAGE from '../assets/silver-bangles.jpg';
 
 const { width, height } = Dimensions.get('window');
 
-interface WelcomeScreenProps {
-    onSignInWithEmail: () => void;
-    onContinueWithGoogle: () => void;
-}
-
-export function WelcomeScreen({ onSignInWithEmail, onContinueWithGoogle }: WelcomeScreenProps) {
+export function WelcomeScreen() {
     const insets = useSafeAreaInsets();
+    const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+
+    const onSignInWithEmail = () => navigation.navigate('SignIn');
+    const onContinueWithGoogle = () => {
+        // TODO: Implement Google Sign In
+        console.log('Google Sign In');
+    };
 
     return (
-        <View className="flex-1 bg-white">
-            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
+        <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
-            {/* Hero Image Section - Taking up substantial space for luxury feel */}
-            <View className="relative">
-                <View
-                    style={{ height: height * 0.55 }}
-                    className="w-full bg-silver-100 overflow-hidden"
-                >
-                    <Image
-                        source={HERO_IMAGE}
-                        className="w-full h-full"
-                        resizeMode="cover"
-                    />
-                    {/* Soft gradient overlay for text readability if needed */}
-                    <View className="absolute inset-0 bg-black/5" />
-                </View>
+            {/* Hero Image Section - Set to exactly 50% as requested */}
+            <View style={{ height: height * 0.50, position: 'relative', backgroundColor: '#000', overflow: 'hidden' }}>
+                <Image
+                    source={HERO_IMAGE}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode="cover"
+                />
+                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.22)' }} />
 
-                {/* Brand Floating Logo */}
+                {/* Main Branding - SKJ SILVERS */}
                 <View
-                    style={{ top: insets.top + 20 }}
-                    className="absolute left-0 right-0 items-center"
+                    style={{
+                        position: 'absolute',
+                        top: insets.top + 30,
+                        left: 0,
+                        right: 0,
+                        paddingHorizontal: 40
+                    }}
                 >
-                    <View className="px-6 py-2 bg-white/90 rounded-full border border-silver-200 backdrop-blur-md">
-                        <Text className="text-black text-xs font-bold tracking-[0.5em] uppercase">
-                            Silvers
+                    <View>
+                        <Text
+                            style={{
+                                color: '#FFFFFF',
+                                fontSize: 60,
+                                fontWeight: '900',
+                                lineHeight: 60,
+                                letterSpacing: -2.5
+                            }}
+                        >
+                            SKJ
+                        </Text>
+                        <Text
+                            style={{
+                                color: '#FFFFFF',
+                                fontSize: 13,
+                                fontWeight: '700',
+                                letterSpacing: 8,
+                                textTransform: 'uppercase',
+                                opacity: 0.9,
+                                marginTop: -2
+                            }}
+                        >
+                            SILVERS
                         </Text>
                     </View>
+                    <View style={{ width: 30, height: 3, backgroundColor: '#FFFFFF', marginTop: 14, borderRadius: 10 }} />
                 </View>
             </View>
 
             {/* Content Section */}
-            <View
-                className="flex-1 px-8 pt-10 pb-12 justify-between"
-                style={{ backgroundColor: '#FFFFFF' }}
+            <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={{
+                    paddingHorizontal: 32,
+                    paddingTop: 40,
+                    paddingBottom: 100 // Significant bottom padding
+                }}
+                bounces={false}
+                showsVerticalScrollIndicator={false}
             >
-                <View>
-                    <View className="w-12 h-1 bg-black mb-6 rounded-full" />
-                    <Text className="text-5xl font-bold text-black tracking-tighter leading-[54px]">
+                <View style={{ marginBottom: 40 }}>
+                    <Text
+                        style={{
+                            fontSize: 42,
+                            fontWeight: '800',
+                            color: '#000000',
+                            letterSpacing: -1.5,
+                            lineHeight: 46,
+                            marginBottom: 8
+                        }}
+                    >
                         Elegance{"\n"}Defined.
                     </Text>
-                    <Text className="text-brand-secondary text-[16px] font-medium mt-6 leading-6">
+                    <Text
+                        style={{
+                            fontSize: 18,
+                            fontWeight: '500',
+                            color: '#636366',
+                            lineHeight: 28,
+                            letterSpacing: -0.5,
+                            marginTop: 10
+                        }}
+                    >
                         Explore our exclusive catalogues of fine rings, bangles, and customized silver jewelry.
                     </Text>
                 </View>
 
-                {/* Action Buttons */}
-                <View className="gap-y-4">
+                {/* Harmonized Button Set: Geometric Sharp Design to match Auth Screen */}
+                <View style={{ gap: 16 }}>
                     <TouchableOpacity
                         onPress={onSignInWithEmail}
-                        activeOpacity={0.9}
-                        className="w-full h-16 bg-black rounded-2xl flex-row items-center justify-center border border-black"
+                        activeOpacity={0.8}
+                        style={{
+                            height: 60,
+                            borderRadius: 100,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderWidth: 1,
+                            borderColor: '#E5E5EA', // Very light border for a "no bg" feel
+                            marginVertical: 8
+                        }}
                     >
-                        <Text className="text-white text-[15px] font-bold uppercase tracking-[2px]">Enter Store</Text>
-                        <Ionicons name="arrow-forward" size={18} color="white" style={{ marginLeft: 10 }} />
+                        <Ionicons name="mail" size={18} color="black" />
+                        <Text style={{
+                            color: '#000000',
+                            fontSize: 15,
+                            fontWeight: '500',
+                            marginLeft: 12,
+                            letterSpacing: 1.5,
+                            textTransform: 'uppercase'
+                        }}>
+                            Sign in with email
+                        </Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         onPress={onContinueWithGoogle}
                         activeOpacity={0.7}
-                        className="w-full h-16 bg-silver-50 border border-silver-100 rounded-2xl flex-row items-center justify-center"
+                        style={{
+                            height: 60,
+                            borderRadius: 100,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderWidth: 1,
+                            borderColor: '#E5E5EA',
+                            marginBottom: 80
+                        }}
                     >
-                        <Ionicons name="logo-google" size={18} color="#000" />
-                        <Text className="text-black text-[14px] font-bold ml-3 uppercase tracking-wider">Continue with Google</Text>
+                        <Image
+                            source={{ uri: 'https://img.icons8.com/color/72/google-logo.png' }}
+                            style={{ width: 22, height: 22 }}
+                            resizeMode="contain"
+                        />
+                        <Text style={{
+                            color: '#000000',
+                            fontSize: 14,
+                            fontWeight: '500',
+                            marginLeft: 12,
+                            letterSpacing: 1,
+                            textTransform: 'uppercase'
+                        }}>
+                            Continue with Google
+                        </Text>
                     </TouchableOpacity>
                 </View>
-            </View>
+            </ScrollView>
         </View>
     );
 }
