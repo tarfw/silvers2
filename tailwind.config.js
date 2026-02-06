@@ -23,6 +23,12 @@ module.exports = {
                     primary: '#000000',
                     secondary: '#636366',
                     accent: '#8E8E93',
+                    midnight: '#1e1b4b',
+                    emerald: '#064e3b',
+                    violet: '#4c1d95',
+                    rose: '#E11D48',      // Vivid Rose
+                    roseLight: '#FFF1F2', // Pale Pink
+                    roseGold: '#FB7185',  // Soft Rose Gold (rose-400)
                 }
             },
             borderRadius: {

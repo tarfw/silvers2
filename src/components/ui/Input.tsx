@@ -7,6 +7,7 @@ interface InputProps extends TextInputProps {
     error?: string;
     icon?: keyof typeof Ionicons.glyphMap;
     containerClassName?: string;
+    className?: string;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -14,12 +15,13 @@ export const Input: React.FC<InputProps> = ({
     error,
     icon,
     containerClassName = '',
+    className = '',
     ...props
 }) => {
     return (
         <View className={`mb-4 ${containerClassName}`}>
             {label && <Text className="text-sm font-medium text-brand-secondary mb-1.5 ml-1">{label}</Text>}
-            <View className={`flex-row items-center bg-silver-50 border ${error ? 'border-red-500' : 'border-silver-200'} rounded-2xl px-4 h-12`}>
+            <View className={`flex-row items-center bg-silver-50 border ${error ? 'border-red-500' : 'border-silver-200'} rounded-2xl px-4 h-12 ${className}`}>
                 {icon && <Ionicons name={icon} size={20} color="#636366" className="mr-2" />}
                 <TextInput
                     className="flex-1 text-brand-primary text-base"

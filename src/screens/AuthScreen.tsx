@@ -6,11 +6,18 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
+import { useNavigation } from '@react-navigation/native';
+
+// Professional vibrant sapphire blue from the jewelry imagery
+const JEWEL_BLUE_BG = '#004c8c';
 
 export function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -19,6 +26,7 @@ export function AuthScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signUp } = useAuth();
+  const navigation = useNavigation();
 
   const handleSubmit = useCallback(async () => {
     if (!email || !password) {
@@ -57,92 +65,107 @@ export function AuthScreen() {
   const isFormValid = email.length > 0 && password.length >= 6;
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white"
-    >
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 32 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+    <SafeAreaView className="flex-1" style={{ backgroundColor: JEWEL_BLUE_BG }}>
+      <StatusBar style="light" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1"
       >
-        <View className="mb-12">
-          <Text className="text-4xl font-bold text-black tracking-tighter mb-2">
-            {isSignUp ? 'Create account' : 'Welcome back'}
-          </Text>
-          <Text className="text-lg text-brand-secondary font-medium">
-            {isSignUp ? 'Join the premium experience' : 'Sign in to your Silvers account'}
-          </Text>
-        </View>
-
-        <View className="w-full max-w-sm self-center">
-          {error && (
-            <View className="bg-red-50 p-4 rounded-2xl mb-6 border border-red-100">
-              <Text className="text-red-600 text-sm font-medium">{error}</Text>
-            </View>
-          )}
-
-          <Input
-            label="Email Address"
-            placeholder="name@example.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            icon="mail-outline"
-          />
-
-          <Input
-            label="Password"
-            placeholder="Min. 6 characters"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            icon="lock-closed-outline"
-          />
-
-          <Button
-            label={isSignUp ? 'Create account' : 'Sign In'}
-            onPress={handleSubmit}
-            isLoading={isLoading}
-            disabled={!isFormValid}
-            size="lg"
-            className="mt-4"
-          />
-        </View>
-
-        <View className="flex-row items-center mt-8 mb-6">
-          <View className="flex-1 h-[1px] bg-silver-100" />
-          <Text className="mx-4 text-silver-400 text-xs font-bold uppercase tracking-widest">or</Text>
-          <View className="flex-1 h-[1px] bg-silver-100" />
-        </View>
-
-        <View className="w-full max-w-sm self-center">
-          <Button
-            label="Continue with Google"
-            onPress={() => { }} // TODO: Implement Google Sign In
-            variant="outline"
-            size="lg"
-            icon={<Ionicons name="logo-google" size={20} color="#000" />}
-          />
-        </View>
-
-        <View className="flex-1" />
-
-        <TouchableOpacity
-          onPress={toggleMode}
-          activeOpacity={0.7}
-          className="items-center py-6"
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 40 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Text className="text-brand-secondary text-base">
-            {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-            <Text className="text-black font-bold">
-              {isSignUp ? ' Sign In' : ' Create account'}
+          {/* Editorial Header */}
+          <View className="mb-12">
+            <Text className="text-4xl text-white font-serif tracking-tight leading-[48px]">
+              {isSignUp ? 'Create your\nCollection.' : 'Welcome\nBack.'}
             </Text>
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            <Text className="text-white/80 text-lg mt-4 font-light">
+              {isSignUp
+                ? 'Join SKJ and discover fine silver.'
+                : 'Sign in to access your saved treasures.'}
+            </Text>
+          </View>
+
+          {/* User-Friendly Form Area */}
+          <View className="w-full bg-white/5 p-6 rounded-[32px] border border-white/10">
+            {error && (
+              <View className="bg-rose-500/20 p-4 rounded-2xl border border-rose-500/20 flex-row items-center mb-6">
+                <Ionicons name="alert-circle" size={20} color="#fb7185" style={{ marginRight: 10 }} />
+                <Text className="text-rose-100 text-sm font-medium flex-1">{error}</Text>
+              </View>
+            )}
+
+            <View className="space-y-6">
+              <View>
+                <Text className="text-white/60 text-xs font-bold uppercase tracking-[0.2em] mb-3 ml-1">Email Address</Text>
+                <Input
+                  placeholder="name@example.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholderTextColor="#94a3b8"
+                  // User-friendly update: Solid white inputs with dark text for maximum legibility
+                  className="bg-white rounded-2xl h-14 text-slate-900 px-5 border-none shadow-sm"
+                  containerClassName="mb-0"
+                />
+              </View>
+
+              <View>
+                <Text className="text-white/60 text-xs font-bold uppercase tracking-[0.2em] mb-3 ml-1">Password</Text>
+                <Input
+                  placeholder="••••••••"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  placeholderTextColor="#94a3b8"
+                  className="bg-white rounded-2xl h-14 text-slate-900 px-5 border-none shadow-sm"
+                  containerClassName="mb-0"
+                />
+                {!isSignUp && (
+                  <TouchableOpacity className="self-end mt-4">
+                    <Text className="text-xs font-semibold text-white/60 underline">Forgot password?</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <TouchableOpacity
+                onPress={handleSubmit}
+                disabled={!isFormValid || isLoading}
+                activeOpacity={0.8}
+                className={`w-full h-16 rounded-2xl flex-row items-center justify-center mt-4 ${isFormValid ? 'bg-white' : 'bg-white/10'}`}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="black" />
+                ) : (
+                  <Text className={`text-lg font-bold ${isFormValid ? 'text-black' : 'text-white/30'}`}>
+                    {isSignUp ? 'Create Account' : 'Sign In'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Mode Toggle Footer */}
+          <View className="mt-auto items-center flex-row justify-center py-10">
+            <Text className="text-white/60 text-sm">
+              {isSignUp ? 'Already member?' : "New to SKJ Silvers?"}
+            </Text>
+            <TouchableOpacity
+              onPress={toggleMode}
+              activeOpacity={0.7}
+              className="ml-2"
+            >
+              <Text className="text-white font-extrabold text-sm underline decoration-white/40">
+                {isSignUp ? 'Sign In' : 'Sign Up'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

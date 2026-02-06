@@ -3,10 +3,9 @@ import "./src/styles/global.css";
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
-import { AuthScreen } from './src/screens/AuthScreen';
-
 import { NavigationContainer } from '@react-navigation/native';
 import { AppNavigator } from './src/navigation/AppNavigator';
+import { AuthNavigator } from './src/navigation/AuthNavigator';
 
 function AppContent() {
   const { isLoading, isAuthenticated } = useAuth();
@@ -26,7 +25,7 @@ function AppContent() {
       {isAuthenticated ? (
         <AppNavigator />
       ) : (
-        <AuthScreen />
+        <AuthNavigator />
       )}
     </NavigationContainer>
   );
