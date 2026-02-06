@@ -99,12 +99,12 @@ export function ProductsScreen() {
         }
     };
 
-    const collections = nodes.filter(n => n.nodetype === 'collection');
+    const categories = nodes.filter(n => n.nodetype === 'category');
 
     const filteredProducts = products.filter(p => {
         const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCategory = selectedCategory
-            ? p.parentid === selectedCategory || p.universalcode.includes(selectedCategory)
+            ? (p.payload as any)?.category === selectedCategory
             : true;
         return matchesSearch && matchesCategory;
     });
@@ -147,18 +147,18 @@ export function ProductsScreen() {
                         >
                             <Text className={`font-semibold text-[13px] ${!selectedCategory ? 'text-white' : 'text-[#8E8E93]'} uppercase tracking-wider`}>All</Text>
                         </TouchableOpacity>
-                        {collections.map(col => (
+                        {categories.map(cat => (
                             <TouchableOpacity
-                                key={col.id}
-                                onPress={() => setSelectedCategory(col.id)}
+                                key={cat.id}
+                                onPress={() => setSelectedCategory(cat.id)}
                                 style={{
-                                    backgroundColor: selectedCategory === col.id ? '#004c8c' : '#F2F2F7',
-                                    borderColor: selectedCategory === col.id ? '#004c8c' : '#F2F2F7'
+                                    backgroundColor: selectedCategory === cat.id ? '#004c8c' : '#F2F2F7',
+                                    borderColor: selectedCategory === cat.id ? '#004c8c' : '#F2F2F7'
                                 }}
                                 className="mr-3 px-6 py-3 rounded-lg border"
                             >
-                                <Text className={`font-semibold text-[13px] ${selectedCategory === col.id ? 'text-white' : 'text-[#8E8E93]'} uppercase tracking-wider`}>
-                                    {col.title}
+                                <Text className={`font-semibold text-[13px] ${selectedCategory === cat.id ? 'text-white' : 'text-[#8E8E93]'} uppercase tracking-wider`}>
+                                    {cat.title}
                                 </Text>
                             </TouchableOpacity>
                         ))}
