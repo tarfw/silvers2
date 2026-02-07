@@ -21,6 +21,7 @@ export function AddAddressScreen() {
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
     const insets = useSafeAreaInsets();
+    const targetActorId = route.params?.targetActorId || user?.id;
     const editingAddress = route.params?.editingAddress;
 
     const [newAddress, setNewAddress] = useState('');
@@ -45,7 +46,7 @@ export function AddAddressScreen() {
     }, [editingAddress]);
 
     const handleSaveAddress = async () => {
-        if (!db || !user) return;
+        if (!db || !targetActorId) return;
 
         if (!newAddress.trim()) {
             Alert.alert('Error', 'Please enter an address');
@@ -68,7 +69,7 @@ export function AddAddressScreen() {
         }
 
         try {
-            const actorData = await db.all('SELECT metadata FROM actors WHERE id = ?', [user.id]) as any[];
+            const actorData = await db.all('SELECT metadata FROM actors WHERE id = ?', [targetActorId]) as any[];
             let addresses = [];
             let metadata = {};
             if (actorData?.[0]?.metadata) {
@@ -100,7 +101,7 @@ export function AddAddressScreen() {
 
             await db.run('UPDATE actors SET metadata = ? WHERE id = ?', [
                 JSON.stringify({ ...metadata, addresses: updatedHistory }),
-                user.id
+                targetActorId
             ]);
 
             navigation.goBack();

@@ -223,9 +223,32 @@ export function OrderDetailsScreen() {
                         {shippingAddress && (
                             <View className="pt-8 border-t border-silver-100">
                                 <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2px] mb-3">Delivery Address</Text>
-                                <Text className="text-[16px] font-bold text-black leading-6">
-                                    {shippingAddress}
-                                </Text>
+                                {typeof shippingAddress === 'string' ? (
+                                    <Text className="text-[16px] font-bold text-black leading-6">
+                                        {shippingAddress}
+                                    </Text>
+                                ) : (
+                                    <View>
+                                        {(shippingAddress as any).businessName && (
+                                            <Text className="text-lg font-bold text-black mb-1">{(shippingAddress as any).businessName}</Text>
+                                        )}
+                                        <Text className="text-[16px] font-bold text-black leading-6">
+                                            {(shippingAddress as any).text}
+                                        </Text>
+                                        <View className="flex-row items-center mt-2 flex-wrap gap-x-4">
+                                            {(shippingAddress as any).pincode && (
+                                                <Text className="text-sm text-brand-secondary font-medium">
+                                                    {(shippingAddress as any).state ? `${(shippingAddress as any).state} - ` : ''}{(shippingAddress as any).pincode}
+                                                </Text>
+                                            )}
+                                            {(shippingAddress as any).phone && (
+                                                <Text className="text-sm text-brand-secondary">
+                                                    Ph: <Text className="font-bold text-black">{(shippingAddress as any).phone}</Text>
+                                                </Text>
+                                            )}
+                                        </View>
+                                    </View>
+                                )}
                             </View>
                         )}
                     </View>

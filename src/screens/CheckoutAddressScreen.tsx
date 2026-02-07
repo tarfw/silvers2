@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView, StatusBar } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { generateShortId } from '../lib/utils';
 import { databaseManager } from '../lib/database';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
 
 export function CheckoutAddressScreen() {
     const { user, db, isAdmin } = useAuth();
@@ -16,61 +15,60 @@ export function CheckoutAddressScreen() {
     const insets = useSafeAreaInsets();
     const { selectedActor } = route.params || {};
     const [cartItems, setCartItems] = useState<any[]>([]);
+    const targetId = (isAdmin && selectedActor) ? selectedActor.id : user?.id;
 
     const [addressHistory, setAddressHistory] = useState<any[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
-    const [newAddress, setNewAddress] = useState('');
-    const [isAddingNew, setIsAddingNew] = useState(false);
-    const [setAsDefault, setSetAsDefault] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Initial Load: Fetch Cart Items and Address History
+    // Update selection if returned from AddressesScreen
     useEffect(() => {
-        const initialize = async () => {
-            if (!db || !user) return;
-            setIsLoading(true);
-            try {
-                // 1. Load Cart Items (Robust source of truth)
-                const cartRows = await db.all(
-                    'SELECT * FROM orevents WHERE opcode = ? AND refid = ?',
-                    [401, user.id]
-                ) as any[];
-                setCartItems(cartRows);
+        if (route.params?.selectedAddressId) {
+            setSelectedAddressId(route.params.selectedAddressId);
+        }
+    }, [route.params?.selectedAddressId]);
 
-                // 2. Load Address History for the Target Actor
-                const targetId = (isAdmin && selectedActor) ? selectedActor.id : user.id;
-                const actorData = await db.all('SELECT metadata FROM actors WHERE id = ?', [targetId]) as any[];
+    const loadData = useCallback(async () => {
+        if (!db || !user || !targetId) return;
+        try {
+            // 1. Load Cart Items
+            const cartRows = await db.all(
+                'SELECT * FROM orevents WHERE opcode = ? AND refid = ?',
+                [401, user.id]
+            ) as any[];
+            setCartItems(cartRows);
 
-                if (actorData?.[0]?.metadata) {
-                    const metadata = JSON.parse(actorData[0].metadata);
-                    const addresses = metadata.addresses || [];
-                    setAddressHistory(addresses);
+            // 2. Load Address History for the Target Actor
+            const actorData = await db.all('SELECT metadata FROM actors WHERE id = ?', [targetId]) as any[];
 
+            if (actorData?.[0]?.metadata) {
+                const metadata = JSON.parse(actorData[0].metadata);
+                const addresses = metadata.addresses || [];
+                setAddressHistory(addresses);
+
+                // Default selection logic if nothing selected yet
+                if (!selectedAddressId && !route.params?.selectedAddressId) {
                     const defaultAddr = addresses.find((a: any) => a.isDefault);
                     if (defaultAddr) {
                         setSelectedAddressId(defaultAddr.id);
-                        setIsAddingNew(false);
                     } else if (addresses.length > 0) {
                         setSelectedAddressId(addresses[0].id);
-                        setIsAddingNew(false);
-                    } else {
-                        setIsAddingNew(true);
-                        setSelectedAddressId(null);
                     }
-                } else {
-                    setAddressHistory([]);
-                    setIsAddingNew(true);
-                    setSelectedAddressId(null);
                 }
-            } catch (error) {
-                console.error('Error initializing checkout data:', error);
-            } finally {
-                setIsLoading(false);
             }
-        };
-        initialize();
-    }, [db, user, isAdmin, selectedActor]);
+        } catch (error) {
+            console.error('Error loading checkout data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [db, user, targetId, selectedAddressId, route.params?.selectedAddressId]);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadData();
+        }, [loadData])
+    );
 
     const handlePlaceOrder = async () => {
         if (!db || !user || isProcessing) return;
@@ -80,15 +78,13 @@ export function CheckoutAddressScreen() {
             return;
         }
 
-        const targetId = (isAdmin && selectedActor) ? selectedActor.id : user.id;
         const selectedAddress = addressHistory.find(a => a.id === selectedAddressId);
-        const finalAddressText = isAddingNew ? newAddress.trim() : (selectedAddress?.text || '');
-
-        if (!finalAddressText) {
-            Alert.alert('Error', 'Please provide a shipping address');
+        if (!selectedAddress) {
+            Alert.alert('Error', 'Please select a shipping address');
             return;
         }
 
+        const finalAddressText = selectedAddress.text;
         setIsProcessing(true);
 
         try {
@@ -136,62 +132,32 @@ export function CheckoutAddressScreen() {
                 506,
                 targetId,
                 0,
-                JSON.stringify({ address: finalAddressText }),
+                JSON.stringify({ address: selectedAddress }),
                 'order',
                 timestamp
             ]);
 
-            // 5. Update Address History for the Target Actor
+            // 5. Update lastUsed timestamp
+            const updatedHistory = addressHistory.map(a =>
+                a.id === selectedAddressId ? { ...a, lastUsed: timestamp } : a
+            );
+
             const actorData = await db.all('SELECT metadata FROM actors WHERE id = ?', [targetId]) as any[];
             let currentMetadata = {};
             if (actorData?.[0]?.metadata) {
                 try {
                     currentMetadata = JSON.parse(actorData[0].metadata) || {};
-                } catch (e) {
-                    console.error('Failed to parse actor metadata:', e);
-                }
+                } catch (e) { }
             }
-
-            let updatedHistory = Array.isArray(addressHistory) ? [...addressHistory] : [];
-            const normalizedNew = finalAddressText.toLowerCase().trim();
-            const existingIdx = updatedHistory.findIndex(a => a?.text?.toLowerCase().trim() === normalizedNew);
-
-            if (existingIdx >= 0) {
-                const existingAddr = updatedHistory[existingIdx];
-                if (existingAddr) {
-                    updatedHistory[existingIdx] = { ...existingAddr, lastUsed: timestamp };
-                    if (setAsDefault) {
-                        updatedHistory = updatedHistory.map((a, i) => ({ ...a, isDefault: i === existingIdx }));
-                    }
-                }
-            } else {
-                const newAddrObj = {
-                    id: `addr_${generateShortId()}`,
-                    text: finalAddressText,
-                    isDefault: setAsDefault || updatedHistory.length === 0,
-                    lastUsed: timestamp
-                };
-                if (newAddrObj.isDefault) {
-                    updatedHistory = updatedHistory.map(a => a ? { ...a, isDefault: false } : a);
-                }
-                updatedHistory.unshift(newAddrObj);
-            }
-
-            // Merge and update
-            const finalMetadata = {
-                ...currentMetadata,
-                addresses: updatedHistory
-            };
 
             await db.run('UPDATE actors SET metadata = ? WHERE id = ?', [
-                JSON.stringify(finalMetadata),
+                JSON.stringify({ ...currentMetadata, addresses: updatedHistory }),
                 targetId
             ]);
 
             // 6. Clear Cart
             await db.run('DELETE FROM orevents WHERE opcode = ? AND refid = ?', [401, user.id]);
 
-            // Trigger background push for the new order
             databaseManager.push().catch((err: any) => console.warn('Order: auto-push failed:', err));
 
             navigation.replace('OrderDetails', {
@@ -219,6 +185,8 @@ export function CheckoutAddressScreen() {
         );
     }
 
+    const selectedAddress = addressHistory.find(a => a.id === selectedAddressId);
+
     return (
         <View className="flex-1 bg-white">
             <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
@@ -231,7 +199,7 @@ export function CheckoutAddressScreen() {
                 </View>
 
                 <ScrollView
-                    contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 100 }}
+                    contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 120 }}
                     showsVerticalScrollIndicator={false}
                 >
                     {isAdmin && (
@@ -261,91 +229,79 @@ export function CheckoutAddressScreen() {
                     )}
 
                     <View className="mb-6">
-                        <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Shipping Address</Text>
+                        <View className="flex-row justify-between items-center mb-4">
+                            <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[2px]">Shipping Address</Text>
+                        </View>
 
-                        {isAddingNew ? (
-                            <View className="bg-silver-50 p-5 rounded-[20px] border border-silver-100">
-                                <Text className="text-[13px] font-bold text-black mb-4">Add New Location</Text>
-                                <Input
-                                    value={newAddress}
-                                    onChangeText={setNewAddress}
-                                    placeholder="Enter full delivery address..."
-                                    multiline
-                                    numberOfLines={3}
-                                    autoFocus
-                                    textAlignVertical="top"
-                                    containerClassName="h-28 mb-6 bg-white border-silver-200"
-                                />
+                        {selectedAddress ? (
+                            <View>
                                 <TouchableOpacity
-                                    className="flex-row items-center mb-6"
-                                    onPress={() => setSetAsDefault(!setAsDefault)}
+                                    activeOpacity={0.8}
+                                    onPress={() => navigation.navigate('Addresses', {
+                                        selectionMode: true,
+                                        targetActorId: targetId,
+                                        selectedAddressId: selectedAddressId
+                                    })}
+                                    className="p-6 rounded-3xl border-2 border-[#004c8c] bg-white shadow-md"
                                 >
-                                    <Ionicons
-                                        name={setAsDefault ? "checkbox" : "square-outline"}
-                                        size={20}
-                                        color={setAsDefault ? "#004c8c" : "#AEAEB2"}
-                                    />
-                                    <Text className="text-[14px] font-medium text-black ml-3">Set as primary address</Text>
-                                </TouchableOpacity>
-
-                                <View className="flex-row gap-3">
-                                    {addressHistory.length > 0 && (
-                                        <TouchableOpacity
-                                            onPress={() => setIsAddingNew(false)}
-                                            className="flex-1 h-12 rounded-xl border border-silver-200 items-center justify-center bg-white"
-                                        >
-                                            <Text className="text-[13px] text-brand-secondary font-bold uppercase tracking-wider">Cancel</Text>
-                                        </TouchableOpacity>
-                                    )}
-                                </View>
-                            </View>
-                        ) : (
-                            <View className="gap-3">
-                                {addressHistory.map((addr) => {
-                                    const isSelected = selectedAddressId === addr.id;
-                                    return (
-                                        <TouchableOpacity
-                                            key={addr.id}
-                                            activeOpacity={0.8}
-                                            style={{
-                                                borderColor: isSelected ? '#004c8c' : '#E5E5EA',
-                                                backgroundColor: isSelected ? '#F8FBFF' : '#FFFFFF',
-                                                borderWidth: isSelected ? 2 : 1
-                                            }}
-                                            className="flex-row items-center p-5 rounded-2xl shadow-sm"
-                                            onPress={() => setSelectedAddressId(addr.id)}
-                                        >
-                                            <View className="flex-1">
-                                                <View className="flex-row items-center justify-between mb-1">
-                                                    <Text className={`text-[15px] ${isSelected ? 'font-bold text-black' : 'text-[#3A3A3C] font-medium'}`}>
-                                                        Home / Work Location
+                                    <View className="flex-row justify-between items-start mb-3">
+                                        <View className="flex-1">
+                                            <View className="flex-row items-center mb-2">
+                                                <View className={`px-2.5 py-1 rounded-lg mr-2 ${selectedAddress.type === 'individual' ? 'bg-blue-50' : 'bg-amber-50'}`}>
+                                                    <Text className={`text-[10px] font-bold uppercase tracking-widest ${selectedAddress.type === 'individual' ? 'text-blue-700' : 'text-amber-700'}`}>
+                                                        {selectedAddress.type || 'Business'}
                                                     </Text>
-                                                    {isSelected && <Ionicons name="checkmark-circle" size={20} color="#004c8c" />}
                                                 </View>
-                                                <Text className={`text-[13px] leading-5 ${isSelected ? 'text-black' : 'text-brand-secondary'}`} numberOfLines={2}>
-                                                    {addr.text}
-                                                </Text>
-                                                {addr.isDefault && (
-                                                    <View className="bg-[#004c8c]/10 self-start px-2 py-0.5 rounded-md mt-2">
-                                                        <Text className="text-[9px] font-bold text-[#004c8c] uppercase tracking-wider">Default</Text>
-                                                    </View>
+                                                {selectedAddress.isDefault && (
+                                                    <Text className="text-[10px] font-bold text-[#004c8c] uppercase tracking-wider">Default</Text>
                                                 )}
                                             </View>
-                                        </TouchableOpacity>
-                                    );
-                                })}
-
-                                <TouchableOpacity
-                                    className="flex-row items-center justify-center h-14 rounded-2xl border border-dashed border-silver-300 bg-silver-50 mt-2"
-                                    onPress={() => {
-                                        setIsAddingNew(true);
-                                        setSelectedAddressId(null);
-                                    }}
-                                >
-                                    <Ionicons name="add" size={18} color="#004c8c" />
-                                    <Text className="text-[13px] font-bold text-[#004c8c] ml-2 uppercase tracking-widest">New Delivery Address</Text>
+                                            {selectedAddress.businessName && (
+                                                <Text className="text-lg font-bold text-black mb-1">{selectedAddress.businessName}</Text>
+                                            )}
+                                            <Text className="text-[16px] leading-6 font-medium text-black">
+                                                {selectedAddress.text}
+                                            </Text>
+                                            <View className="flex-row items-center mt-3 flex-wrap gap-x-6">
+                                                {selectedAddress.pincode && (
+                                                    <Text className="text-sm text-brand-secondary font-medium">
+                                                        {selectedAddress.state ? `${selectedAddress.state} - ` : ''}{selectedAddress.pincode}
+                                                    </Text>
+                                                )}
+                                                {selectedAddress.phone && (
+                                                    <Text className="text-sm text-brand-secondary">
+                                                        Ph: <Text className="font-bold text-black">{selectedAddress.phone}</Text>
+                                                    </Text>
+                                                )}
+                                            </View>
+                                        </View>
+                                        <View className="w-8 h-8 rounded-full bg-silver-50 items-center justify-center">
+                                            <Ionicons name="location" size={18} color="#004c8c" />
+                                        </View>
+                                    </View>
+                                    <View className="mt-4 pt-4 border-t border-silver-100 flex-row items-center justify-center">
+                                        <Text className="text-[12px] font-bold text-[#004c8c] uppercase tracking-widest">Change Address</Text>
+                                        <Ionicons name="chevron-forward" size={14} color="#004c8c" className="ml-1" />
+                                    </View>
                                 </TouchableOpacity>
                             </View>
+                        ) : (
+                            <TouchableOpacity
+                                onPress={() => navigation.navigate('Addresses', {
+                                    selectionMode: true,
+                                    targetActorId: targetId
+                                })}
+                                className="items-center justify-center py-16 bg-silver-50 rounded-[32px] border-2 border-dashed border-silver-300"
+                            >
+                                <View className="w-16 h-16 rounded-full bg-silver-100 items-center justify-center mb-4">
+                                    <Ionicons name="location-outline" size={32} color="#004c8c" />
+                                </View>
+                                <Text className="text-[17px] font-bold text-black mb-1">No Address Selected</Text>
+                                <Text className="text-[14px] text-brand-secondary mb-6 text-center px-8">Select a shipping address to continue</Text>
+                                <View className="bg-[#004c8c] px-6 py-3 rounded-xl">
+                                    <Text className="text-white font-bold uppercase tracking-wider">Select Address</Text>
+                                </View>
+                            </TouchableOpacity>
                         )}
                     </View>
                 </ScrollView>
@@ -353,15 +309,15 @@ export function CheckoutAddressScreen() {
                 <View className="p-6 border-t border-silver-100 bg-white" style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
                     <TouchableOpacity
                         onPress={handlePlaceOrder}
-                        disabled={isProcessing}
-                        style={{ backgroundColor: '#004c8c' }}
+                        disabled={isProcessing || !selectedAddressId}
+                        style={{ backgroundColor: selectedAddressId ? '#004c8c' : '#AEAEB2' }}
                         className={`h-14 rounded-2xl flex-row items-center justify-center shadow-lg ${isProcessing ? 'opacity-50' : ''}`}
                     >
                         {isProcessing ? (
                             <ActivityIndicator color="white" />
                         ) : (
                             <>
-                                <Text className="text-white text-[15px] font-bold uppercase tracking-[1.5px] mr-2">Place Order</Text>
+                                <Text className="text-white text-[15px] font-bold uppercase tracking-[1.5px] mr-2">Confirm Order</Text>
                                 <Ionicons name="arrow-forward" size={18} color="white" />
                             </>
                         )}
