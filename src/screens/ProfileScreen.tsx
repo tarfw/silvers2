@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,10 +49,13 @@ export function ProfileScreen() {
                 <View className="px-6 pb-8">
                     <Text className="text-[11px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4 ml-1">Support</Text>
                     <View className="bg-silver-50/50 rounded-2xl border border-silver-100 overflow-hidden">
-                        <TouchableOpacity className="px-5 py-4 flex-row items-center justify-between border-b border-silver-100 bg-white shadow-sm">
+                        <TouchableOpacity
+                            className="px-5 py-4 flex-row items-center justify-between border-b border-silver-100 bg-white"
+                            onPress={() => Linking.openURL('https://wa.me/919345966624')}
+                        >
                             <View className="flex-row items-center">
-                                <Ionicons name="help-circle-outline" size={20} color="#AEAEB2" />
-                                <Text className="text-base font-semibold text-black ml-4">Help Center</Text>
+                                <Ionicons name="logo-whatsapp" size={20} color="#AEAEB2" />
+                                <Text className="text-base font-semibold text-black ml-4">WhatsApp Support</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color="#D1D1D6" />
                         </TouchableOpacity>

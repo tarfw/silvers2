@@ -36,7 +36,7 @@ function NodeItem({
         <TouchableOpacity
             onPress={() => onEdit(node)}
             onLongPress={() => onDelete(node)}
-            className="flex-row items-center py-5 px-6 border-b border-silver-100/50 active:bg-silver-50"
+            className="mx-6 mb-3 bg-white rounded-2xl border border-silver-200 p-4 flex-row items-center"
             activeOpacity={0.7}
         >
             {(node.nodetype === 'product' || node.nodetype === 'category' || node.nodetype === 'collection') && (
@@ -329,7 +329,7 @@ export function NodesScreen() {
         <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
             <View className="flex-1">
                 {/* Modern Header */}
-                <View className="px-6 pt-8 pb-4">
+                <View className="px-6 pt-8 pb-4 bg-white">
                     <Text className="text-xl font-bold text-black tracking-tight mb-6">Catalogue Management</Text>
 
                     {/* Integrated Search */}
@@ -348,7 +348,7 @@ export function NodesScreen() {
                 </View>
 
                 {/* Tab Bar Navigation */}
-                <View className="border-b border-silver-100">
+                <View className="bg-white border-b border-silver-100">
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
@@ -392,7 +392,7 @@ export function NodesScreen() {
                             onEdit={handleOpenEdit}
                         />
                     )}
-                    contentContainerStyle={{ paddingBottom: 100 }}
+                    contentContainerStyle={{ paddingVertical: 20, paddingBottom: 100 }}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl
@@ -423,7 +423,7 @@ export function NodesScreen() {
             <TouchableOpacity
                 onPress={handleOpenAdd}
                 activeOpacity={0.7}
-                className="absolute bottom-10 right-6 w-16 h-16 bg-white rounded-2xl items-center justify-center border border-silver-200 shadow-sm"
+                className="absolute bottom-10 right-6 w-16 h-16 bg-white rounded-2xl items-center justify-center border border-silver-200"
             >
                 <Ionicons name="add" size={32} color="#4A4A4A" />
             </TouchableOpacity>
@@ -476,7 +476,7 @@ export function NodesScreen() {
             >
                 <View className="flex-1 bg-white">
                     {/* Modal Fixed Header */}
-                    <View className="px-6 pt-6 pb-4 border-b border-silver-100 flex-row items-center justify-between">
+                    <View className="px-6 pt-6 pb-4 bg-white border-b border-silver-100 flex-row items-center justify-between">
                         <TouchableOpacity onPress={() => setModalVisible(false)} className="px-2" activeOpacity={0.7}>
                             <Text className="text-brand-secondary font-medium">Cancel</Text>
                         </TouchableOpacity>
@@ -489,18 +489,17 @@ export function NodesScreen() {
                     </View>
 
                     <ScrollView
-                        className="flex-1 px-6"
+                        className="flex-1"
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: 60 }}
+                        contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
                     >
                         {/* Image Section */}
                         {(formNodeType === 'product' || formNodeType === 'category' || formNodeType === 'collection') && (
-                            <View className="mt-8 mb-6">
-                                <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Display Identity</Text>
+                            <View className="bg-white p-6 rounded-2xl mb-4 border border-silver-200">
                                 <TouchableOpacity
                                     onPress={() => setIsImageOptionsVisible(true)}
                                     activeOpacity={0.7}
-                                    className="w-full aspect-[4/3] bg-silver-50 rounded-xl border border-silver-100 overflow-hidden items-center justify-center p-4"
+                                    className="w-full aspect-[4/3] bg-silver-50 rounded-xl border border-silver-200 overflow-hidden items-center justify-center p-4"
                                 >
                                     {formImageUrl ? (
                                         <SecureImage source={{ uri: formImageUrl }} className="w-full h-full rounded-xl" />
@@ -509,7 +508,7 @@ export function NodesScreen() {
                                             <View className="w-16 h-16 bg-white rounded-full items-center justify-center mb-4 border border-silver-50">
                                                 <Ionicons name="image-outline" size={24} color="#AEAEB2" />
                                             </View>
-                                            <Text className="text-[13px] font-bold text-brand-secondary uppercase tracking-widest">Tap to Add Image</Text>
+                                            <Text className="text-[13px] font-bold text-brand-secondary uppercase tracking-widest">Add Media</Text>
                                         </View>
                                     )}
                                 </TouchableOpacity>
@@ -517,14 +516,11 @@ export function NodesScreen() {
                         )}
 
                         {/* General Info */}
-                        <View className="mt-4">
-                            <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Identification</Text>
-
+                        <View className="bg-white p-6 rounded-2xl mb-4 border border-silver-200">
                             <View className="mb-6">
-                                <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Public Title</Text>
                                 <TextInput
                                     className="bg-silver-50 rounded-lg px-5 py-4 border border-silver-100 text-[16px] font-medium text-black"
-                                    placeholder="Enter title..."
+                                    placeholder="Title"
                                     placeholderTextColor="#AEAEB2"
                                     value={formTitle}
                                     onChangeText={setFormTitle}
@@ -532,11 +528,10 @@ export function NodesScreen() {
                             </View>
 
                             {(formNodeType === 'product') && (
-                                <View className="mb-6">
-                                    <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Universal ID / SKU</Text>
+                                <View>
                                     <TextInput
                                         className="bg-silver-50 rounded-lg px-5 py-4 border border-silver-100 text-[16px] font-medium text-black"
-                                        placeholder="Optional unique code..."
+                                        placeholder="SKU"
                                         placeholderTextColor="#AEAEB2"
                                         value={formUniversalCode}
                                         onChangeText={setFormUniversalCode}
@@ -548,8 +543,7 @@ export function NodesScreen() {
 
                         {/* Node Specific Configs */}
                         {(shouldShowParentId(formNodeType) && formNodeType !== 'category' && formNodeType !== 'collection' && formNodeType !== 'vendor' && formNodeType !== 'optionset') && (
-                            <View className="mb-6">
-                                <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Structure</Text>
+                            <View className="bg-white p-6 rounded-2xl mb-4 border border-silver-200">
                                 <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Parent Group</Text>
                                 <TouchableOpacity
                                     onPress={() => {
@@ -569,90 +563,58 @@ export function NodesScreen() {
                         )}
 
                         {formNodeType === 'product' && (
-                            <View>
-                                <View className="mb-6">
-                                    <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Classifications</Text>
-
-                                    <View className="mb-4">
-                                        <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Primary Category</Text>
-                                        <TouchableOpacity
-                                            onPress={() => {
-                                                setParentTypeFilter('category');
-                                                setParentSearchQuery('');
-                                                setParentPickerVisible(true);
-                                            }}
-                                            activeOpacity={0.7}
-                                            className="bg-silver-50 rounded-lg px-5 py-4 border border-silver-100 flex-row justify-between items-center"
-                                        >
-                                            <Text className="text-[16px] font-medium text-black">
-                                                {nodes.find(n => n.id === formCategoryId)?.title || 'None'}
-                                            </Text>
-                                            <Ionicons name="chevron-forward" size={14} color="#AEAEB2" />
-                                        </TouchableOpacity>
-                                    </View>
-
-                                    <View className="mb-4">
-                                        <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Vendor / Supplier</Text>
-                                        <TouchableOpacity
-                                            onPress={() => {
-                                                setParentTypeFilter('vendor');
-                                                setParentSearchQuery('');
-                                                setParentPickerVisible(true);
-                                            }}
-                                            activeOpacity={0.7}
-                                            className="bg-silver-50 rounded-lg px-5 py-4 border border-silver-100 flex-row justify-between items-center"
-                                        >
-                                            <Text className="text-[16px] font-medium text-black">
-                                                {nodes.find(n => n.id === formVendorId)?.title || 'None'}
-                                            </Text>
-                                            <Ionicons name="chevron-forward" size={14} color="#AEAEB2" />
-                                        </TouchableOpacity>
-                                    </View>
-
-                                    <View className="mb-4">
-                                        <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Collections</Text>
-                                        <TouchableOpacity
-                                            onPress={() => {
-                                                setParentTypeFilter('collection');
-                                                setParentSearchQuery('');
-                                                setIsCollectionSelectVisible(true);
-                                            }}
-                                            activeOpacity={0.7}
-                                            className="bg-silver-50 rounded-lg px-5 py-4 border border-silver-100 min-h-[56px] justify-center"
-                                        >
-                                            {formCollectionIds.length > 0 ? (
-                                                <View className="flex-row flex-wrap gap-2">
-                                                    {formCollectionIds.map(id => (
-                                                        <View key={id} className="bg-silver-200 px-3 py-1.5 rounded-full">
-                                                            <Text className="text-[11px] font-bold text-black uppercase tracking-tight">
-                                                                {nodes.find(n => n.id === id)?.title || id}
-                                                            </Text>
-                                                        </View>
-                                                    ))}
-                                                </View>
-                                            ) : (
-                                                <Text className="text-brand-secondary italic">Part of any collection?</Text>
-                                            )}
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-
-                                <View className="mb-6">
-                                    <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Attributes</Text>
-                                    <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Selected Options</Text>
+                            <View className="bg-white p-6 rounded-2xl mb-4 border border-silver-200">
+                                <View className="mb-4">
+                                    <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Category</Text>
                                     <TouchableOpacity
                                         onPress={() => {
-                                            setParentTypeFilter('option');
+                                            setParentTypeFilter('category');
                                             setParentSearchQuery('');
-                                            setIsMultiSelectModalVisible(true);
+                                            setParentPickerVisible(true);
+                                        }}
+                                        activeOpacity={0.7}
+                                        className="bg-silver-50 rounded-lg px-5 py-4 border border-silver-100 flex-row justify-between items-center"
+                                    >
+                                        <Text className="text-[16px] font-medium text-black">
+                                            {nodes.find(n => n.id === formCategoryId)?.title || 'None'}
+                                        </Text>
+                                        <Ionicons name="chevron-forward" size={14} color="#AEAEB2" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View className="mb-4">
+                                    <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Vendor</Text>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            setParentTypeFilter('vendor');
+                                            setParentSearchQuery('');
+                                            setParentPickerVisible(true);
+                                        }}
+                                        activeOpacity={0.7}
+                                        className="bg-silver-50 rounded-lg px-5 py-4 border border-silver-100 flex-row justify-between items-center"
+                                    >
+                                        <Text className="text-[16px] font-medium text-black">
+                                            {nodes.find(n => n.id === formVendorId)?.title || 'None'}
+                                        </Text>
+                                        <Ionicons name="chevron-forward" size={14} color="#AEAEB2" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View>
+                                    <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Collections</Text>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            setParentTypeFilter('collection');
+                                            setParentSearchQuery('');
+                                            setIsCollectionSelectVisible(true);
                                         }}
                                         activeOpacity={0.7}
                                         className="bg-silver-50 rounded-lg px-5 py-4 border border-silver-100 min-h-[56px] justify-center"
                                     >
-                                        {formSelectedOptions.length > 0 ? (
+                                        {formCollectionIds.length > 0 ? (
                                             <View className="flex-row flex-wrap gap-2">
-                                                {formSelectedOptions.map(id => (
-                                                    <View key={id} className="bg-silver-100 px-3 py-1.5 rounded-full border border-silver-200">
+                                                {formCollectionIds.map(id => (
+                                                    <View key={id} className="bg-silver-200 px-3 py-1.5 rounded-full">
                                                         <Text className="text-[11px] font-bold text-black uppercase tracking-tight">
                                                             {nodes.find(n => n.id === id)?.title || id}
                                                         </Text>
@@ -660,20 +622,47 @@ export function NodesScreen() {
                                                 ))}
                                             </View>
                                         ) : (
-                                            <Text className="text-brand-secondary italic">Manage variants and options...</Text>
+                                            <Text className="text-brand-secondary italic">Add Collections</Text>
                                         )}
                                     </TouchableOpacity>
                                 </View>
                             </View>
                         )}
 
+                        {formNodeType === 'product' && (
+                            <View className="bg-white p-6 rounded-2xl mb-4 border border-silver-200">
+                                <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Options</Text>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setParentTypeFilter('option');
+                                        setParentSearchQuery('');
+                                        setIsMultiSelectModalVisible(true);
+                                    }}
+                                    activeOpacity={0.7}
+                                    className="bg-silver-50 rounded-lg px-5 py-4 border border-silver-100 min-h-[56px] justify-center"
+                                >
+                                    {formSelectedOptions.length > 0 ? (
+                                        <View className="flex-row flex-wrap gap-2">
+                                            {formSelectedOptions.map(id => (
+                                                <View key={id} className="bg-silver-100 px-3 py-1.5 rounded-full border border-silver-200">
+                                                    <Text className="text-[11px] font-bold text-black uppercase tracking-tight">
+                                                        {nodes.find(n => n.id === id)?.title || id}
+                                                    </Text>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    ) : (
+                                        <Text className="text-brand-secondary italic">Add Options</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
                         {(formNodeType === 'product') && (
-                            <View className="mb-10">
-                                <Text className="text-[10px] font-bold text-brand-secondary uppercase tracking-[2px] mb-4">Detailing</Text>
-                                <Text className="text-[12px] font-bold mb-2 ml-1 text-black uppercase tracking-tight">Public Description</Text>
+                            <View className="bg-white p-6 rounded-2xl mb-10 border border-silver-200">
                                 <TextInput
                                     className="bg-silver-50 rounded-xl px-5 py-4 border border-silver-100 text-[16px] font-medium text-black min-h-[120px]"
-                                    placeholder="Describe this item..."
+                                    placeholder="Description"
                                     placeholderTextColor="#AEAEB2"
                                     multiline
                                     value={formDescription}
@@ -881,12 +870,12 @@ export function NodesScreen() {
             >
                 <View className="flex-1 bg-white">
                     <View className="px-6 pt-6 pb-4 border-b border-silver-100 flex-row items-center justify-between">
+                        <TouchableOpacity onPress={() => setFormSelectedOptions([])} className="px-2" activeOpacity={0.7}>
+                            <Text className="text-red-500 font-bold uppercase text-[11px] tracking-widest">Clear</Text>
+                        </TouchableOpacity>
+                        <Text className="text-[17px] font-bold text-black tracking-tight">Options</Text>
                         <TouchableOpacity onPress={() => setIsMultiSelectModalVisible(false)} className="px-2" activeOpacity={0.7}>
                             <Text className="text-black font-bold uppercase text-[11px] tracking-widest">Done</Text>
-                        </TouchableOpacity>
-                        <Text className="text-[17px] font-bold text-black tracking-tight">Select Options</Text>
-                        <TouchableOpacity onPress={() => setFormSelectedOptions([])} className="px-2" activeOpacity={0.7}>
-                            <Text className="text-red-500 font-bold uppercase text-[11px] tracking-widest">Clear All</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -948,12 +937,12 @@ export function NodesScreen() {
             >
                 <View className="flex-1 bg-white">
                     <View className="px-6 pt-6 pb-4 border-b border-silver-100 flex-row items-center justify-between">
+                        <TouchableOpacity onPress={() => setFormCollectionIds([])} className="px-2" activeOpacity={0.7}>
+                            <Text className="text-red-500 font-bold uppercase text-[11px] tracking-widest">Clear</Text>
+                        </TouchableOpacity>
+                        <Text className="text-[17px] font-bold text-black tracking-tight">Collections</Text>
                         <TouchableOpacity onPress={() => setIsCollectionSelectVisible(false)} className="px-2" activeOpacity={0.7}>
                             <Text className="text-black font-bold uppercase text-[11px] tracking-widest">Done</Text>
-                        </TouchableOpacity>
-                        <Text className="text-[17px] font-bold text-black tracking-tight">Select Collections</Text>
-                        <TouchableOpacity onPress={() => setFormCollectionIds([])} className="px-2" activeOpacity={0.7}>
-                            <Text className="text-red-500 font-bold uppercase text-[11px] tracking-widest">Clear All</Text>
                         </TouchableOpacity>
                     </View>
 
