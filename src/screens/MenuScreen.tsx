@@ -12,14 +12,12 @@ const ADMIN_MENU_GROUPS = [
         items: [
             { id: 'orders', title: 'Orders', iconName: 'receipt-outline' as const, screen: 'Orders' },
             { id: 'reports', title: 'Sales Reports', iconName: 'bar-chart-outline' as const, screen: 'Reports' },
-            { id: 'inventory', title: 'Inventory', iconName: 'cube-outline' as const, screen: 'Inventory' },
         ]
     },
     {
         title: 'Catalog',
         items: [
             { id: 'all', title: 'Catalogue', iconName: 'grid-outline' as const, screen: 'Nodes' },
-            { id: 'collections', title: 'Collections', iconName: 'albums-outline' as const, screen: 'Collections' },
         ]
     },
     {

@@ -20,7 +20,7 @@ function CollectionCard({ node }: { node: Node }) {
 
     return (
         <TouchableOpacity
-            onPress={() => navigation.navigate('Home', { selectedCollectionId: node.id })}
+            onPress={() => navigation.navigate('CollectionProducts', { collectionId: node.id, collectionTitle: node.title })}
             style={{ borderRadius: 40 }}
             className="w-full h-48 mb-6 overflow-hidden bg-silver-50 border border-silver-100"
             activeOpacity={0.9}

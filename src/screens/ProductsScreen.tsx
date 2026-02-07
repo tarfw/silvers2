@@ -126,9 +126,6 @@ export function ProductsScreen() {
                             onChangeText={setSearchQuery}
                             className="flex-1 ml-3 text-[16px] text-black font-medium"
                         />
-                        <TouchableOpacity activeOpacity={0.7} className="ml-2 pl-3 border-l border-silver-200">
-                            <Ionicons name="options-outline" size={20} color="#004c8c" />
-                        </TouchableOpacity>
                     </View>
 
                     {/* Horizontal Collections */}

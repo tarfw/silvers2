@@ -18,6 +18,7 @@ import { CheckoutAddressScreen } from '../screens/CheckoutAddressScreen';
 import { MyOrdersScreen } from '../screens/MyOrdersScreen';
 import { ActorsScreen } from '../screens/ActorsScreen';
 import { AddressesScreen } from '../screens/AddressesScreen';
+import { CollectionProductsScreen } from '../screens/CollectionProductsScreen';
 
 import { cssInterop } from 'nativewind';
 import { BlurView } from 'expo-blur';
@@ -92,6 +93,7 @@ export function AppNavigator() {
                 }}
             />
             <Stack.Screen name="Addresses" component={AddressesScreen} />
+            <Stack.Screen name="CollectionProducts" component={CollectionProductsScreen} />
         </Stack.Navigator>
     );
 }
