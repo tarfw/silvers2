@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { supabase, User } from '../lib/supabase';
 import { databaseManager } from '../lib/database';
+
 // Triggering a refresh to clear stale Metro cache
 
 interface AuthContextType {
@@ -20,11 +22,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [db, setDb] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const syncTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-  const isInitializingRef = React.useRef<boolean>(false);
-  const currentSessionUserRef = React.useRef<string | null>(null);
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitializingRef = useRef<boolean>(false);
+  const currentSessionUserRef = useRef<string | null>(null);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
   useEffect(() => {
+    const handleSync = async () => {
+      if (databaseManager.getDatabase()) {
+        try {
+          console.log(`[${new Date().toLocaleTimeString('en-GB')}] 🔄 Auto-sync triggered...`);
+          await databaseManager.sync();
+        } catch (err) {
+          console.warn('Auto-sync failed:', err);
+        }
+      }
+    };
+
     const initTenantDb = async (userId: string, email: string, name: string) => {
       // Prevent parallel initializations for the same user
       if (isInitializingRef.current) {
@@ -45,6 +60,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const initializedDb = await databaseManager.initialize(userId, email, name);
         setDb(initializedDb);
+
+        // Start heartbeat sync every 5 minutes
+        if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+        heartbeatIntervalRef.current = setInterval(handleSync, 5 * 60 * 1000);
 
         /* Initial sync moved to useTasks hook to ensure proper UI coordination */
       } catch (err) {
@@ -75,6 +94,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     checkSession();
 
+    // AppState Listener for lifecycle-triggered sync
+    const subscriptionAppState = AppState.addEventListener('change', nextAppState => {
+      if (
+        appStateRef.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        console.log('[AuthContext] App has come to the foreground, triggering sync...');
+        handleSync();
+      }
+      appStateRef.current = nextAppState;
+    });
+
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
@@ -92,13 +123,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           clearTimeout(syncTimeoutRef.current);
           syncTimeoutRef.current = null;
         }
+        if (heartbeatIntervalRef.current) {
+          clearInterval(heartbeatIntervalRef.current);
+          heartbeatIntervalRef.current = null;
+        }
         setUser(null);
         setDb(null);
         await databaseManager.close();
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      subscriptionAppState.remove();
+      if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

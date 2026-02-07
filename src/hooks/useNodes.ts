@@ -109,6 +109,8 @@ export function useNodes() {
         ]);
 
         await loadNodes();
+        // Trigger background push
+        databaseManager.push().catch(e => console.warn('[useNodes] Auto-push after create failed:', e));
         return node;
     };
 
@@ -156,6 +158,8 @@ export function useNodes() {
         `, values);
 
         await loadNodes();
+        // Trigger background push
+        databaseManager.push().catch(e => console.warn('[useNodes] Auto-push after update failed:', e));
     };
 
     // Delete node
@@ -164,6 +168,8 @@ export function useNodes() {
 
         await db.run('DELETE FROM nodes WHERE id = ?', [id]);
         await loadNodes();
+        // Trigger background push
+        databaseManager.push().catch(e => console.warn('[useNodes] Auto-push after delete failed:', e));
     };
 
     // Sync with cloud

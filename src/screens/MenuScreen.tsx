@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNodes } from '../hooks/useNodes';
 import { useAuth } from '../contexts/AuthContext';
 
 const ADMIN_MENU_GROUPS = [
@@ -48,9 +47,6 @@ export function MenuScreen() {
     const navigation = useNavigation<any>();
     const insets = useSafeAreaInsets();
     const { isAdmin } = useAuth();
-    const { isSyncing, pull, push, sync } = useNodes();
-    const [isPulling, setIsPulling] = useState(false);
-    const [isPushing, setIsPushing] = useState(false);
 
     const menuGroups = isAdmin ? ADMIN_MENU_GROUPS : USER_MENU_GROUPS;
 
@@ -59,32 +55,6 @@ export function MenuScreen() {
             navigation.navigate(screen);
         } else if (screen === 'Collections') {
             navigation.navigate('MainTabs', { screen });
-        }
-    };
-
-    const handlePull = async () => {
-        setIsPulling(true);
-        try {
-            await pull();
-        } catch (e) {
-            Alert.alert('Pull Failed', 'Could not fetch updates from cloud.');
-        } finally {
-            setTimeout(() => setIsPulling(false), 500);
-        }
-    };
-
-    const handlePush = async () => {
-        setIsPushing(true);
-        try {
-            await push();
-        } catch (e: any) {
-            if (e.message?.includes('FOREIGN KEY')) {
-                Alert.alert('Push Failed', 'A dependency issue occurred. Try Pulling first.');
-            } else {
-                Alert.alert('Push Failed', 'Could not upload updates to cloud.');
-            }
-        } finally {
-            setTimeout(() => setIsPushing(false), 500);
         }
     };
 
@@ -98,7 +68,7 @@ export function MenuScreen() {
 
                 <ScrollView
                     className="flex-1"
-                    contentContainerStyle={{ paddingBottom: 180, paddingHorizontal: 24 }}
+                    contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 24 }}
                     showsVerticalScrollIndicator={false}
                 >
                     {menuGroups.map((group) => (
@@ -128,38 +98,10 @@ export function MenuScreen() {
                     ))}
                 </ScrollView>
             </View>
-
-            {/* Bottom Floating Sync Bar - Unified for Reliability */}
-            <View className="absolute bottom-32 left-6 right-6">
-                <TouchableOpacity
-                    onPress={async () => {
-                        try {
-                            await sync();
-                        } catch (e) {
-                            Alert.alert('Sync Failed', 'Could not synchronize with cloud. Check your connection.');
-                        }
-                    }}
-                    disabled={isSyncing}
-                    activeOpacity={0.8}
-                    className="bg-black rounded-full h-16 flex-row items-center px-6 shadow-2xl justify-between"
-                >
-                    <View className="flex-row items-center">
-                        <Ionicons
-                            name={isSyncing ? "refresh" : "cloud-done-outline"}
-                            size={20}
-                            color="#FFF"
-                        />
-                        <Text className="text-white font-bold ml-3 text-sm uppercase tracking-widest">
-                            {isSyncing ? 'Synchronizing...' : 'Sync Everything'}
-                        </Text>
-                    </View>
-                    <View className="bg-white/10 px-4 py-2 rounded-full">
-                        <Text className="text-[10px] font-bold text-white/60 uppercase tracking-widest">
-                            {isSyncing ? 'In Progress' : 'Cloud Safe'}
-                        </Text>
-                    </View>
-                </TouchableOpacity>
-            </View>
         </View>
     );
 }
+
+const styles = {
+    // legacy styles removed
+};

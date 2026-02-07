@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { generateShortId } from '../lib/utils';
+import { databaseManager } from '../lib/database';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 
@@ -189,6 +190,9 @@ export function CheckoutAddressScreen() {
 
             // 6. Clear Cart
             await db.run('DELETE FROM orevents WHERE opcode = ? AND refid = ?', [401, user.id]);
+
+            // Trigger background push for the new order
+            databaseManager.push().catch((err: any) => console.warn('Order: auto-push failed:', err));
 
             navigation.replace('OrderDetails', {
                 streamId: orderId,
