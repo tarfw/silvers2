@@ -10,6 +10,8 @@ interface SecureImageProps extends ImageProps {
 
 /**
  * A wrapper around React Native Image that automatically signs S3 keys.
+ * Handles both full URLs and relative storage paths.
+ * No external dependencies required.
  */
 export const SecureImage = ({ source, style, fallbackComponent, onPress, ...props }: SecureImageProps) => {
     const [uri, setUri] = useState<string | null>(null);
@@ -24,20 +26,22 @@ export const SecureImage = ({ source, style, fallbackComponent, onPress, ...prop
                 return;
             }
 
-            // Check if it's an S3 key (starts with uploads/)
-            if (originalUri.startsWith('uploads/')) {
-                setIsLoading(true);
-                try {
-                    const signedUrl = await storage.getViewUrl(originalUri);
-                    setUri(signedUrl);
-                } catch (error) {
-                    console.error('Failed to resolve secure image:', error);
-                    setUri(null);
-                } finally {
-                    setIsLoading(false);
-                }
-            } else {
+            // If it's already a full URL, use it directly
+            if (typeof originalUri === 'string' && originalUri.startsWith('http')) {
                 setUri(originalUri);
+                return;
+            }
+
+            // Otherwise, treat as a storage key (including those starting with 'uploads/')
+            setIsLoading(true);
+            try {
+                const resolvedUrl = await storage.getViewUrl(originalUri);
+                setUri(resolvedUrl);
+            } catch (error) {
+                console.error('Failed to resolve secure image:', error);
+                setUri(null);
+            } finally {
+                setIsLoading(false);
             }
         };
 
@@ -56,13 +60,19 @@ export const SecureImage = ({ source, style, fallbackComponent, onPress, ...prop
         return fallbackComponent ? <>{fallbackComponent}</> : <View style={[styles.placeholder, style]} />;
     }
 
+    // Use regular Image if no onPress is needed. This avoids nested TouchableOpacity issues
+    // and ensures simple styling (like width: '100%') works correctly.
+    if (!onPress) {
+        return <Image {...props} source={{ uri }} style={style} />;
+    }
+
     return (
         <TouchableOpacity
-            activeOpacity={onPress ? 0.9 : 1}
+            activeOpacity={0.9}
             onPress={() => uri && onPress?.(uri)}
-            disabled={!onPress}
+            style={style}
         >
-            <Image {...props} source={{ uri }} style={style} />
+            <Image {...props} source={{ uri }} style={[StyleSheet.absoluteFill, style]} />
         </TouchableOpacity>
     );
 };

@@ -41,14 +41,18 @@ function NodeItem({
         >
             {(node.nodetype === 'product' || node.nodetype === 'category' || node.nodetype === 'collection') && (
                 <View
-                    style={{ borderRadius: 8 }}
-                    className="w-14 h-14 bg-silver-50 border border-silver-100 items-center justify-center overflow-hidden"
+                    style={{ borderRadius: 10 }}
+                    className="w-14 h-14 bg-silver-100 border border-silver-200 items-center justify-center overflow-hidden"
                 >
                     <SecureImage
-                        source={{ uri: payload.image }}
-                        style={{ borderRadius: 8 }}
-                        className="w-full h-full"
-                        fallbackComponent={<Ionicons name="cube-outline" size={24} color="#AEAEB2" />}
+                        source={{ uri: payload?.image || '' }}
+                        style={{ width: '100%', height: '100%', borderRadius: 10 }}
+                        resizeMode="cover"
+                        fallbackComponent={
+                            <View className="items-center justify-center w-full h-full bg-silver-50">
+                                <Ionicons name={node.nodetype === 'product' ? 'cube-outline' : 'albums-outline'} size={24} color="#AEAEB2" />
+                            </View>
+                        }
                     />
                 </View>
             )}
