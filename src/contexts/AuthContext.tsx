@@ -3,6 +3,7 @@ import { AppState, AppStateStatus } from 'react-native';
 import { supabase, User } from '../lib/supabase';
 import { databaseManager } from '../lib/database';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { makeRedirectUri } from 'expo-auth-session';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -32,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isInitializingRef = useRef<boolean>(false);
   const currentSessionUserRef = useRef<string | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const isProcessingLinkRef = useRef<boolean>(false);
 
   useEffect(() => {
     const handleSync = async () => {
@@ -138,9 +140,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
+    // Listen for deep links (Crucial for when browser doesn't return automatically)
+    const handleDeepLink = (event: { url: string }) => {
+      console.log(`[DeepLink] Received URL: ${event.url}`);
+      if (event.url.includes('access_token=') || event.url.includes('refresh_token=')) {
+        console.log('[DeepLink] Found tokens in URL, checking if already processing...');
+        if (isProcessingLinkRef.current) {
+          console.log('[DeepLink] Already processing a link, skipping...');
+          return;
+        }
+        extractAndSetSession(event.url);
+      }
+    };
+
+    const linkingSubscription = Linking.addEventListener('url', handleDeepLink);
+
+    // Initial URL check (for cold starts from a deep link)
+    Linking.getInitialURL().then(url => {
+      if (url) {
+        console.log(`[DeepLink] App started with URL: ${url}`);
+        handleDeepLink({ url });
+      }
+    });
+
     return () => {
       subscription.unsubscribe();
       subscriptionAppState.remove();
+      linkingSubscription.remove();
       if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
     };
   }, []);
@@ -155,27 +181,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   };
 
-  const signInWithGoogle = async () => {
-    const redirectUri = makeRedirectUri({
-      scheme: 'silvers',
-    });
+  const extractAndSetSession = async (url: string) => {
+    if (isProcessingLinkRef.current) return;
+    isProcessingLinkRef.current = true;
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: redirectUri,
-        skipBrowserRedirect: true,
-      },
-    });
-
-    if (error) throw error;
-
-    const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
-
-    if (res.type === 'success') {
-      const { url } = res;
-      const fragment = url.split('#')[1];
-      if (!fragment) return;
+    try {
+      const fragment = url.split('#')[1] || url.split('?')[1];
+      if (!fragment) {
+        isProcessingLinkRef.current = false;
+        return;
+      }
 
       const params = fragment.split('&').reduce((acc: any, part) => {
         const [key, value] = part.split('=');
@@ -189,7 +204,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           refresh_token: params.refresh_token,
         });
         if (sessionError) throw sessionError;
+        console.log('[Auth] Session set successfully via link capture.');
+        // If we are in the browser, close it
+        WebBrowser.dismissBrowser();
       }
+    } catch (err) {
+      console.error('[Auth] Failed to set session from URL:', err);
+    } finally {
+      // Small timeout to allow Supabase to stabilize and current listeners to fire
+      setTimeout(() => {
+        isProcessingLinkRef.current = false;
+      }, 2000);
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    // We must use a scheme that is ALREADY in your AndroidManifest.xml
+    // 'silvers://' is not in your current build, but 'com.tarapp.tursotasks://' is.
+    const redirectUri = 'com.tarapp.tursotasks://auth';
+    console.log(`[Google Auth] Starting URI: ${redirectUri}`);
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUri,
+        skipBrowserRedirect: true,
+      },
+    });
+
+    if (error) throw error;
+
+    // Use openAuthSessionAsync which returns control to the app
+    const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
+
+    if (res.type === 'success') {
+      console.log('[Google Auth] Success redirect captured by WebBrowser.');
+      extractAndSetSession(res.url);
+    } else {
+      console.log(`[Google Auth] Interaction result: ${res.type}`);
     }
   };
 
