@@ -85,4 +85,14 @@ export const storage = {
 
         return { key, publicUrl };
     },
+
+    /**
+     * Get a viewable URL for a given key.
+     * Currently returns the public URL by prepending the prefix.
+     */
+    async getViewUrl(key: string): Promise<string> {
+        const PUBLIC_PREFIX = 'https://tstore81-wrmez.sevalla.storage';
+        if (key.startsWith('http')) return key;
+        return `${PUBLIC_PREFIX}/${key.replace(/^\//, '')}`;
+    },
 };

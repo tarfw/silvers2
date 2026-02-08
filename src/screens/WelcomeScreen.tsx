@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
+import { useAuth } from '../contexts/AuthContext';
+import { ActivityIndicator } from 'react-native';
 
 // Local asset import for the hero image
 import HERO_IMAGE from '../assets/silver-bangles.jpg';
@@ -23,11 +25,20 @@ const { width, height } = Dimensions.get('window');
 export function WelcomeScreen() {
     const insets = useSafeAreaInsets();
     const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+    const [isLoading, setIsLoading] = useState(false);
+    const { signInWithGoogle } = useAuth();
 
     const onSignInWithEmail = () => navigation.navigate('SignIn');
-    const onContinueWithGoogle = () => {
-        // TODO: Implement Google Sign In
-        console.log('Google Sign In');
+    const onContinueWithGoogle = async () => {
+        try {
+            setIsLoading(true);
+            await signInWithGoogle();
+        } catch (error) {
+            console.error('Google Sign-In Error:', error);
+            // In a real app, you might show an alert here
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -164,21 +175,27 @@ export function WelcomeScreen() {
                             marginBottom: 80
                         }}
                     >
-                        <Image
-                            source={{ uri: 'https://img.icons8.com/color/72/google-logo.png' }}
-                            style={{ width: 22, height: 22 }}
-                            resizeMode="contain"
-                        />
-                        <Text style={{
-                            color: '#000000',
-                            fontSize: 14,
-                            fontWeight: '500',
-                            marginLeft: 12,
-                            letterSpacing: 1,
-                            textTransform: 'uppercase'
-                        }}>
-                            Continue with Google
-                        </Text>
+                        {isLoading ? (
+                            <ActivityIndicator color="#000000" />
+                        ) : (
+                            <>
+                                <Image
+                                    source={{ uri: 'https://img.icons8.com/color/72/google-logo.png' }}
+                                    style={{ width: 22, height: 22 }}
+                                    resizeMode="contain"
+                                />
+                                <Text style={{
+                                    color: '#000000',
+                                    fontSize: 14,
+                                    fontWeight: '500',
+                                    marginLeft: 12,
+                                    letterSpacing: 1,
+                                    textTransform: 'uppercase'
+                                }}>
+                                    Continue with Google
+                                </Text>
+                            </>
+                        )}
                     </TouchableOpacity>
                 </View>
             </ScrollView>

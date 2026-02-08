@@ -2,6 +2,10 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { AppState, AppStateStatus } from 'react-native';
 import { supabase, User } from '../lib/supabase';
 import { databaseManager } from '../lib/database';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
+
+WebBrowser.maybeCompleteAuthSession();
 
 // Triggering a refresh to clear stale Metro cache
 
@@ -12,6 +16,7 @@ interface AuthContextType {
   db: any | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
 }
@@ -150,6 +155,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   };
 
+  const signInWithGoogle = async () => {
+    const redirectUri = makeRedirectUri({
+      scheme: 'silvers',
+    });
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUri,
+        skipBrowserRedirect: true,
+      },
+    });
+
+    if (error) throw error;
+
+    const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
+
+    if (res.type === 'success') {
+      const { url } = res;
+      const fragment = url.split('#')[1];
+      if (!fragment) return;
+
+      const params = fragment.split('&').reduce((acc: any, part) => {
+        const [key, value] = part.split('=');
+        acc[key] = value;
+        return acc;
+      }, {});
+
+      if (params.access_token && params.refresh_token) {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: params.access_token,
+          refresh_token: params.refresh_token,
+        });
+        if (sessionError) throw sessionError;
+      }
+    }
+  };
+
   const signOut = async () => {
     try {
       // Attempt to push pending changes with a 2-second timeout
@@ -177,6 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAdmin: user?.email === 'skjsilverssmith@gmail.com',
       signIn,
       signUp,
+      signInWithGoogle,
       signOut,
     }}>
       {children}

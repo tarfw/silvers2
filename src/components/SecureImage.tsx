@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Image, ImageProps, ActivityIndicator, View, StyleSheet } from 'react-native';
+import { Image, ImageProps, ActivityIndicator, View, StyleSheet, TouchableOpacity } from 'react-native';
 import { storage } from '../lib/storage';
 
 interface SecureImageProps extends ImageProps {
     source: { uri: string } | any;
     fallbackComponent?: React.ReactNode;
+    onPress?: (uri: string) => void;
 }
 
 /**
  * A wrapper around React Native Image that automatically signs S3 keys.
  */
-export const SecureImage = ({ source, style, fallbackComponent, ...props }: SecureImageProps) => {
+export const SecureImage = ({ source, style, fallbackComponent, onPress, ...props }: SecureImageProps) => {
     const [uri, setUri] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -55,7 +56,15 @@ export const SecureImage = ({ source, style, fallbackComponent, ...props }: Secu
         return fallbackComponent ? <>{fallbackComponent}</> : <View style={[styles.placeholder, style]} />;
     }
 
-    return <Image {...props} source={{ uri }} style={style} />;
+    return (
+        <TouchableOpacity
+            activeOpacity={onPress ? 0.9 : 1}
+            onPress={() => uri && onPress?.(uri)}
+            disabled={!onPress}
+        >
+            <Image {...props} source={{ uri }} style={style} />
+        </TouchableOpacity>
+    );
 };
 
 const styles = StyleSheet.create({

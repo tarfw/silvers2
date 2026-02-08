@@ -9,6 +9,7 @@ import {
     Platform,
     StatusBar
 } from 'react-native';
+import ImageView from 'react-native-image-viewing';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SecureImage } from '../components/SecureImage';
@@ -32,6 +33,8 @@ export function ProductDetailsScreen() {
     const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
     const [isAdded, setIsAdded] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
+    const [viewerVisible, setViewerVisible] = useState(false);
+    const [zoomUri, setZoomUri] = useState<string | null>(null);
 
     const payload = product.payload as any;
     const imageUrl = payload?.image;
@@ -125,12 +128,28 @@ export function ProductDetailsScreen() {
                         style={{ width: width, height: width }}
                         className="bg-silver-100"
                         resizeMode="cover"
+                        onPress={(uri) => {
+                            setZoomUri(uri);
+                            setViewerVisible(true);
+                        }}
                         fallbackComponent={
                             <View style={{ width: width, height: width }} className="bg-silver-100 items-center justify-center">
                                 <Ionicons name="image-outline" size={64} color="#D1D1D6" />
                             </View>
                         }
                     />
+
+                    {/* Fullscreen Image Viewer */}
+                    {zoomUri && (
+                        <ImageView
+                            images={[{ uri: zoomUri }]}
+                            imageIndex={0}
+                            visible={viewerVisible}
+                            onRequestClose={() => setViewerVisible(false)}
+                            swipeToCloseEnabled={true}
+                            doubleTapToZoomEnabled={true}
+                        />
+                    )}
 
                     {/* Floating Back Button */}
                     <TouchableOpacity
